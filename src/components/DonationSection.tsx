@@ -40,26 +40,53 @@ export function DonationSection({ userFid }: DonationSectionProps) {
 
     setIsProcessing(true)
     setError('')
-    try {
-      // Open Warpcast with pre-filled send token action
-      const tokenAddress = token === 'USDC' 
+
+    // Compute token (CAIP-19) and amount in smallest unit
+    const tokenAddress =
+      token === 'USDC'
         ? 'eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
         : 'eip155:8453/native'
-      
-      const amountInSmallestUnit = token === 'USDC'
-        ? (parseFloat(amount) * 1_000_000).toString()
+
+    const amountInSmallestUnit =
+      token === 'USDC'
+        ? Math.round(parseFloat(amount) * 1_000_000).toString()
         : (parseFloat(amount) * 1_000_000_000_000_000_000).toString()
 
-      // Create a direct link to send tokens via Warplet
-      const warpcastUrl = `https://warpcast.com/~/send?token=${encodeURIComponent(tokenAddress)}&amount=${amountInSmallestUnit}&recipientAddress=${CREATOR_WALLET}`
-      
-      // In Farcaster frame, open in top to avoid popup blockers
-      if (isInFarcaster) {
-        window.open(warpcastUrl, '_top')
-      } else {
-        window.open(warpcastUrl, '_blank')
+    // Build Warpcast deep link (redundant recipient keys for safety)
+    const params = new URLSearchParams({
+      token: tokenAddress,
+      amount: amountInSmallestUnit,
+      recipient: CREATOR_WALLET,
+      recipientAddress: CREATOR_WALLET,
+    })
+    const warpcastUrl = `https://warpcast.com/~/send?${params.toString()}`
+
+    try {
+      // Always prefer SDK when Mini App context is detected
+      try {
+        const { sdk } = await import('@farcaster/miniapp-sdk')
+        const inMiniApp = await sdk.isInMiniApp().catch(() => false)
+        if (inMiniApp) {
+          // Native Warplet overlay
+          try {
+            await sdk.actions.sendToken({
+              token: tokenAddress,
+              amount: amountInSmallestUnit,
+              recipientAddress: CREATOR_WALLET,
+            })
+          } catch {
+            // Fallback to openUrl (Warpcast intercepts to Warplet)
+            await sdk.actions.openUrl(warpcastUrl)
+          }
+        } else {
+          // Not a mini app context → open link (desktop/mobile browser)
+          window.open(warpcastUrl, isInFarcaster ? '_top' : '_blank')
+        }
+      } catch {
+        // SDK not available → open link
+        window.open(warpcastUrl, isInFarcaster ? '_top' : '_blank')
       }
-      
+
       // Show success message
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 10000)
@@ -68,7 +95,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
       console.error('Donation error:', error)
       // Fallback: copy link to clipboard for manual open
       try {
-        await navigator.clipboard.writeText(`https://warpcast.com/~/send?token=${token === 'USDC' ? 'eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' : 'eip155:8453/native'}&amount=${token === 'USDC' ? (parseFloat(amount) * 1_000_000).toString() : (parseFloat(amount) * 1_000_000_000_000_000_000).toString()}&recipientAddress=${CREATOR_WALLET}`)
+        await navigator.clipboard.writeText(warpcastUrl)
         setError('Popup blocked. Link copied — paste into your browser to complete the donation.')
       } catch {
         setError('Unable to open donation page. Please check your connection and try again.')
