@@ -18,7 +18,7 @@ const config = createConfig({
   multiInjectedProviderDiscovery: true,
 })
 
-function AutoConnect(): JSX.Element | null {
+function AutoConnect() {
   const { isConnected } = useAccount()
   const { connectors, connectAsync } = useConnect()
 
