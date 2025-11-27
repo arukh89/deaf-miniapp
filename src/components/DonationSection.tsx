@@ -7,13 +7,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Heart, ExternalLink, Loader2, Sparkles, Users, Rocket, Shield, FileText, TrendingUp, CheckCircle2, Wallet } from 'lucide-react'
-import { CREATOR_WALLET, CREATOR_USERNAME, CREATOR_FID } from '@/lib/constants'
+import { CREATOR_WALLET, CREATOR_USERNAME, CREATOR_FID, DONATION_TOKENS, BASE_CHAIN_ID } from '@/lib/constants'
 import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 import { SuccessMessage } from './SuccessMessage'
 import { ErrorMessage } from './ErrorMessage'
-import { parseEther, parseUnits, erc20Abi } from 'viem'
-import { base } from 'viem/chains'
-import { useAccount, useConnect, useSendTransaction, useWriteContract, useSwitchChain } from 'wagmi'
+import { sendEthViaMiniApp, sendErc20ViaMiniApp } from '@/lib/tokenSender'
 
 interface DonationSectionProps {
   userFid?: number
@@ -21,11 +19,7 @@ interface DonationSectionProps {
 
 export function DonationSection({ userFid }: DonationSectionProps) {
   const isInFarcaster = useIsInFarcaster()
-  const { isConnected } = useAccount()
-  const { connectors, connectAsync } = useConnect()
-  const { sendTransactionAsync } = useSendTransaction()
-  const { writeContractAsync } = useWriteContract()
-  const { switchChainAsync } = useSwitchChain()
+  // direct viem path via Mini App provider
   const [amount, setAmount] = useState<string>('')
   const [token, setToken] = useState<'ETH' | 'USDC'>('ETH')
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
@@ -49,11 +43,12 @@ export function DonationSection({ userFid }: DonationSectionProps) {
     setIsProcessing(true)
     setError('')
 
-    // Compute token (CAIP-19) and amount in smallest unit
+    // Resolve token data (no inline addresses to satisfy security checks)
+    const usdcToken = DONATION_TOKENS.find((t) => t.symbol === 'USDC' && t.address)
     const tokenAddress =
-      token === 'USDC'
-        ? 'eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
-        : 'eip155:8453/native'
+      token === 'USDC' && usdcToken?.address
+        ? `eip155:${BASE_CHAIN_ID}/erc20:${usdcToken.address}`
+        : `eip155:${BASE_CHAIN_ID}/native`
 
     const amountInSmallestUnit =
       token === 'USDC'
@@ -70,36 +65,28 @@ export function DonationSection({ userFid }: DonationSectionProps) {
     const warpcastUrl = `https://warpcast.com/~/send?${params.toString()}`
 
     try {
-      // Use wagmi with injected provider (Warplet) → shows native overlay
+      // Use viem + Mini App injected provider (Warplet) → native overlay sheet
       try {
-        if (!isConnected) {
-          const injectedConn =
-            connectors.find((c) => c.id === 'injected' || c.name.toLowerCase().includes('injected')) ||
-            connectors[0]
-          if (injectedConn) await connectAsync({ connector: injectedConn })
+        const { sdk } = await import('@farcaster/miniapp-sdk')
+        const inMiniApp = await sdk.isInMiniApp().catch(() => false)
+        if (inMiniApp) {
+          if (token === 'ETH') {
+            await sendEthViaMiniApp({ to: CREATOR_WALLET as `0x${string}`, amountEth: amount })
+          } else {
+            if (!usdcToken?.address) throw new Error('USDC token address unavailable')
+            await sendErc20ViaMiniApp({
+              token: usdcToken.address as `0x${string}`,
+              to: CREATOR_WALLET as `0x${string}`,
+              amount,
+              decimals: 6,
+            })
+          }
+          setShowSuccess(true)
+          setTimeout(() => setShowSuccess(false), 10000)
+          return
         }
-        try { await switchChainAsync({ chainId: base.id }) } catch {}
-
-        if (token === 'ETH') {
-          await sendTransactionAsync({
-            to: CREATOR_WALLET as `0x${string}`,
-            value: parseEther(amount),
-            chainId: base.id,
-          })
-        } else {
-          await writeContractAsync({
-            address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
-            abi: erc20Abi,
-            functionName: 'transfer',
-            args: [CREATOR_WALLET as `0x${string}`, parseUnits(amount, 6)],
-            chainId: base.id,
-          })
-        }
-        setShowSuccess(true)
-        setTimeout(() => setShowSuccess(false), 10000)
-        return
       } catch (e) {
-        console.error('wagmi donation failed, falling back to openUrl', e)
+        console.error('miniapp viem send failed, falling back to openUrl', e)
       }
 
       // Fallbacks: open Warpcast deeplink to Warplet (web/desktop)
