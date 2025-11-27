@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
+
 import { CREATOR_USERNAME } from "@/lib/constants";
+
 import "./globals.css";
 
 import { ResponseLogger } from "@/components/response-logger";
 import { ReadyNotifier } from "@/components/ready-notifier";
 import FarcasterWrapper from "@/components/FarcasterWrapper";
+
 import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
   title: "Gesture Translator",
   description: `Convert gestures to text/audio in multiple languages for the hearing-impaired. Support us via USDC/ETH donations directly through the app. UID: farcaster ${CREATOR_USERNAME}.`,
   other: {
-    // Metadata.other expects primitive values (string/number/array) — pakai JSON.stringify
+    // Metadata.other expects primitives; stringify nested objects
     "fc:miniapp": JSON.stringify({
       version: "1",
       imageUrl:
@@ -19,7 +22,7 @@ export const metadata: Metadata = {
       button: {
         title: "Open Deaf Helper",
         action: {
-          type: "launch_mini_app", // sesuai permintaanmu
+          type: "launch_mini_app",
           name: "Gesture Translator",
           url: "https://deaf-miniapp.vercel.app/",
           splashImageUrl:
@@ -43,9 +46,7 @@ export default function RootLayout({
       <body className="antialiased">
         {/* Do not remove this component — used to notify parent that the mini-app is ready */}
         <ReadyNotifier />
-
         <FarcasterWrapper>{children}</FarcasterWrapper>
-
         <ResponseLogger />
       </body>
     </html>
