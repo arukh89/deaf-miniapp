@@ -14,6 +14,22 @@ const TILE_IMAGE_URL =
 const SPLASH_IMAGE_URL =
   "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/farcaster/splash_images/splash_image1.svg";
 
+// Follow Farcaster mini-app meta spec exactly
+const frame = {
+  version: "1" as const,
+  imageUrl: TILE_IMAGE_URL,
+  button: {
+    title: "Launch Gesture Translator",
+    action: {
+      type: "launch_frame" as const,
+      name: "Gesture Translator",
+      url: APP_URL,
+      splashImageUrl: SPLASH_IMAGE_URL,
+      splashBackgroundColor: "#ffffff",
+    },
+  },
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Gesture Translator",
@@ -39,20 +55,7 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [TILE_IMAGE_URL],
     },
     other: {
-      "fc:miniapp": JSON.stringify({
-        version: "1",
-        imageUrl: TILE_IMAGE_URL,
-        button: {
-          title: "Launch Gesture Translator",
-          action: {
-            type: "launch_miniapp",
-            name: "Gesture Translator",
-            url: APP_URL,
-            splashImageUrl: SPLASH_IMAGE_URL,
-            splashBackgroundColor: "#ffffff",
-          },
-        },
-      }),
+      "fc:miniapp": JSON.stringify(frame),
     },
   };
 }
