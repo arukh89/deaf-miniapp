@@ -8,6 +8,7 @@ import { ErrorMessage } from './ErrorMessage'
 import type { Results } from '@mediapipe/hands'
 import { analyzeHandGesture, getGesturePhrase } from '@/lib/gestureRecognition'
 import { Badge } from '@/components/ui/badge'
+import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 import { feedbackService } from '@/lib/feedbackService'
 
 interface GestureCameraLiveProps {
@@ -49,6 +50,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
   const handsRef = useRef<any>(null)
   const disposedRef = useRef<boolean>(false)
   const sendingRef = useRef<boolean>(false)
+  const isMiniApp = useIsInFarcaster()
 
   useEffect(() => {
     const loadMediaPipe = async (): Promise<void> => {
@@ -304,13 +306,13 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
     <Card className="w-full bg-gradient-to-br from-slate-900/60 to-emerald-900/60 backdrop-blur-xl border-emerald-500/30 shadow-2xl shadow-emerald-500/20">
       <CardContent className="p-3 sm:p-4 md:p-6">
         <div className="space-y-4">
-          <div className="relative aspect-[3/4] md:aspect-video h-[80vh] md:h-[70vh] bg-gradient-to-br from-slate-950 to-emerald-950 rounded-lg overflow-hidden border-2 border-emerald-500/30 shadow-2xl shadow-emerald-500/20">
+          <div className={`relative ${isMiniApp ? 'h-[62vh]' : 'h-[80vh] md:h-[70vh]'} bg-gradient-to-br from-slate-950 to-emerald-950 rounded-lg overflow-hidden border-2 border-emerald-500/30 shadow-2xl shadow-emerald-500/20`}>
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
               style={{ transform: isMirrored ? 'scaleX(-1)' : 'none' }}
             />
             <canvas

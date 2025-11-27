@@ -8,6 +8,7 @@ import { ErrorMessage } from './ErrorMessage'
 import { analyzeGestureFromImage, getGesturePhrase } from '@/lib/gestureRecognition'
 import { feedbackService } from '@/lib/feedbackService'
 import { Badge } from '@/components/ui/badge'
+import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 
 interface GestureCameraProps {
   onCapture: (imageUrl: string, gesture?: string, confidence?: number) => void
@@ -24,6 +25,7 @@ export function GestureCamera({ onCapture, isProcessing = false }: GestureCamera
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false)
   const [detectedGesture, setDetectedGesture] = useState<string>('')
   const [gestureConfidence, setGestureConfidence] = useState<number>(0)
+  const isMiniApp = useIsInFarcaster()
 
   const startCamera = async (): Promise<void> => {
     try {
@@ -141,13 +143,13 @@ export function GestureCamera({ onCapture, isProcessing = false }: GestureCamera
     <Card className="w-full bg-gradient-to-br from-slate-900/60 to-purple-900/60 backdrop-blur-xl border-purple-500/30 shadow-2xl shadow-purple-500/20">
       <CardContent className="p-3 sm:p-4 md:p-6">
         <div className="space-y-4">
-          <div className="relative aspect-[3/4] md:aspect-video h-[80vh] md:h-[70vh] bg-gradient-to-br from-slate-950 to-purple-950 rounded-lg overflow-hidden border-2 border-purple-500/30 shadow-2xl shadow-purple-500/20">
+          <div className={`relative ${isMiniApp ? 'h-[62vh]' : 'h-[80vh] md:h-[70vh]'} bg-gradient-to-br from-slate-950 to-purple-950 rounded-lg overflow-hidden border-2 border-purple-500/30 shadow-2xl shadow-purple-500/20`}>
             {capturedImage ? (
               <div className="relative w-full h-full">
                 <img
                   src={capturedImage}
                   alt="Captured gesture"
-                  className="w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
                 
                 {/* Analysis overlay */}
@@ -203,7 +205,7 @@ export function GestureCamera({ onCapture, isProcessing = false }: GestureCamera
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
                 {!isStreaming && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-sm">

@@ -11,9 +11,9 @@ import { CREATOR_WALLET, CREATOR_USERNAME, CREATOR_FID } from '@/lib/constants'
 import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 import { SuccessMessage } from './SuccessMessage'
 import { ErrorMessage } from './ErrorMessage'
-import { useAccount, useConnect, useSendTransaction, useWriteContract, useSwitchChain } from 'wagmi'
 import { parseEther, parseUnits, erc20Abi } from 'viem'
 import { base } from 'viem/chains'
+import { useAccount, useConnect, useSendTransaction, useWriteContract, useSwitchChain } from 'wagmi'
 
 interface DonationSectionProps {
   userFid?: number
@@ -70,7 +70,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
     const warpcastUrl = `https://warpcast.com/~/send?${params.toString()}`
 
     try {
-      // 1) Try wagmi path first (Mini App provider is EIP-6963-injected)
+      // Use wagmi with injected provider (Warplet) → shows native overlay
       try {
         if (!isConnected) {
           const injectedConn =
@@ -78,7 +78,6 @@ export function DonationSection({ userFid }: DonationSectionProps) {
             connectors[0]
           if (injectedConn) await connectAsync({ connector: injectedConn })
         }
-        // Ensure Base chain
         try { await switchChainAsync({ chainId: base.id }) } catch {}
 
         if (token === 'ETH') {
@@ -100,31 +99,14 @@ export function DonationSection({ userFid }: DonationSectionProps) {
         setTimeout(() => setShowSuccess(false), 10000)
         return
       } catch (e) {
-        console.error('wagmi donation failed, falling back to SDK/openUrl', e)
+        console.error('wagmi donation failed, falling back to openUrl', e)
       }
 
-      // Always prefer SDK when Mini App context is detected
+      // Fallbacks: open Warpcast deeplink to Warplet (web/desktop)
       try {
         const { sdk } = await import('@farcaster/miniapp-sdk')
-        const inMiniApp = await sdk.isInMiniApp().catch(() => false)
-        if (inMiniApp) {
-          // Native Warplet overlay
-          try {
-            await sdk.actions.sendToken({
-              token: tokenAddress,
-              amount: amountInSmallestUnit,
-              recipientAddress: CREATOR_WALLET,
-            })
-          } catch {
-            // Fallback to openUrl (Warpcast intercepts to Warplet)
-            await sdk.actions.openUrl(warpcastUrl)
-          }
-        } else {
-          // Not a mini app context → open link (desktop/mobile browser)
-          window.open(warpcastUrl, isInFarcaster ? '_top' : '_blank')
-        }
+        await sdk.actions.openUrl(warpcastUrl)
       } catch {
-        // SDK not available → open link
         window.open(warpcastUrl, isInFarcaster ? '_top' : '_blank')
       }
 
