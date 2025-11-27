@@ -16,7 +16,7 @@ interface DonationSectionProps {
   userFid?: number
 }
 
-export function DonationSection({ userFid }: DonationSectionProps): JSX.Element {
+export function DonationSection({ userFid }: DonationSectionProps) {
   const isInFarcaster = useIsInFarcaster()
   const [amount, setAmount] = useState<string>('')
   const [token, setToken] = useState<'ETH' | 'USDC'>('ETH')

@@ -76,7 +76,7 @@ export function ErrorMessage({
   message, 
   onRetry, 
   onReport 
-}: ErrorMessageProps): JSX.Element {
+}: ErrorMessageProps) {
   const config = ERROR_CONFIGS[type]
   const Icon = config.icon
 

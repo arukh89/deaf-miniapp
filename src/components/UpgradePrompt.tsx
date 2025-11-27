@@ -43,7 +43,7 @@ const UPGRADE_FEATURES = {
   }
 }
 
-export function UpgradePrompt({ context = 'general', onDonate }: UpgradePromptProps): JSX.Element {
+export function UpgradePrompt({ context = 'general', onDonate }: UpgradePromptProps) {
   const config = UPGRADE_FEATURES[context]
 
   const handleUpgrade = (): void => {

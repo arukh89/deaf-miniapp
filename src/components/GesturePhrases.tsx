@@ -10,7 +10,7 @@ interface GesturePhrasesProps {
   onSelectPhrase: (phraseKey: string) => void
 }
 
-export function GesturePhrases({ onSelectPhrase }: GesturePhrasesProps): JSX.Element {
+export function GesturePhrases({ onSelectPhrase }: GesturePhrasesProps) {
   const [expandedCategory, setExpandedCategory] = useState<string>('greetings')
 
   // Organize phrases by category

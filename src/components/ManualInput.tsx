@@ -11,7 +11,7 @@ interface ManualInputProps {
   onSubmit: (text: string) => void
 }
 
-export function ManualInput({ onSubmit }: ManualInputProps): JSX.Element {
+export function ManualInput({ onSubmit }: ManualInputProps) {
   const [text, setText] = useState<string>('')
 
   const handleSubmit = (): void => {

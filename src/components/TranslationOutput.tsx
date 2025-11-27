@@ -14,7 +14,7 @@ interface TranslationOutputProps {
   language: Language
 }
 
-export function TranslationOutput({ text, language }: TranslationOutputProps): JSX.Element {
+export function TranslationOutput({ text, language }: TranslationOutputProps) {
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false)
   const [copied, setCopied] = useState<boolean>(false)
   const [speechError, setSpeechError] = useState<string>('')

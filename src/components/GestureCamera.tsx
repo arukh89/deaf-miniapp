@@ -14,7 +14,7 @@ interface GestureCameraProps {
   isProcessing?: boolean
 }
 
-export function GestureCamera({ onCapture, isProcessing = false }: GestureCameraProps): JSX.Element {
+export function GestureCamera({ onCapture, isProcessing = false }: GestureCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)

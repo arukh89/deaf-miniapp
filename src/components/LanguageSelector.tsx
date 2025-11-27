@@ -16,7 +16,7 @@ interface LanguageSelectorProps {
   onChange: (language: Language) => void
 }
 
-export function LanguageSelector({ value, onChange }: LanguageSelectorProps): JSX.Element {
+export function LanguageSelector({ value, onChange }: LanguageSelectorProps) {
   return (
     <div className="space-y-2">
       <Label htmlFor="language-select" className="text-purple-300 font-semibold">Output Language</Label>

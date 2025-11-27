@@ -19,7 +19,7 @@ export function SuccessMessage({
   message,
   onShare,
   link
-}: SuccessMessageProps): JSX.Element {
+}: SuccessMessageProps) {
   return (
     <Alert className="border-green-300 bg-green-50">
       <CheckCircle2 className="h-5 w-5 text-green-600" />

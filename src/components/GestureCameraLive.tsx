@@ -28,7 +28,7 @@ function loadScript(src: string): Promise<void> {
   })
 }
 
-export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps): JSX.Element {
+export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const processCanvasRef = useRef<HTMLCanvasElement>(null)

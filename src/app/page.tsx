@@ -20,7 +20,7 @@ import { useAddMiniApp } from "@/hooks/useAddMiniApp";
 import { useQuickAuth } from "@/hooks/useQuickAuth";
 import { useIsInFarcaster } from "@/hooks/useIsInFarcaster";
 
-export default function Page(): JSX.Element {
+export default function Page() {
   const [user, setUser] = useState<FarcasterUser | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('en')
