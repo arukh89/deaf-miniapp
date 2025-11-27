@@ -11,6 +11,9 @@ import { CREATOR_WALLET, CREATOR_USERNAME, CREATOR_FID } from '@/lib/constants'
 import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 import { SuccessMessage } from './SuccessMessage'
 import { ErrorMessage } from './ErrorMessage'
+import { useAccount, useConnect, useSendTransaction, useWriteContract, useSwitchChain } from 'wagmi'
+import { parseEther, parseUnits, erc20Abi } from 'viem'
+import { base } from 'viem/chains'
 
 interface DonationSectionProps {
   userFid?: number
@@ -18,6 +21,11 @@ interface DonationSectionProps {
 
 export function DonationSection({ userFid }: DonationSectionProps) {
   const isInFarcaster = useIsInFarcaster()
+  const { isConnected } = useAccount()
+  const { connectors, connectAsync } = useConnect()
+  const { sendTransactionAsync } = useSendTransaction()
+  const { writeContractAsync } = useWriteContract()
+  const { switchChainAsync } = useSwitchChain()
   const [amount, setAmount] = useState<string>('')
   const [token, setToken] = useState<'ETH' | 'USDC'>('ETH')
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
@@ -62,6 +70,39 @@ export function DonationSection({ userFid }: DonationSectionProps) {
     const warpcastUrl = `https://warpcast.com/~/send?${params.toString()}`
 
     try {
+      // 1) Try wagmi path first (Mini App provider is EIP-6963-injected)
+      try {
+        if (!isConnected) {
+          const injectedConn =
+            connectors.find((c) => c.id === 'injected' || c.name.toLowerCase().includes('injected')) ||
+            connectors[0]
+          if (injectedConn) await connectAsync({ connector: injectedConn })
+        }
+        // Ensure Base chain
+        try { await switchChainAsync({ chainId: base.id }) } catch {}
+
+        if (token === 'ETH') {
+          await sendTransactionAsync({
+            to: CREATOR_WALLET as `0x${string}`,
+            value: parseEther(amount),
+            chainId: base.id,
+          })
+        } else {
+          await writeContractAsync({
+            address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
+            abi: erc20Abi,
+            functionName: 'transfer',
+            args: [CREATOR_WALLET as `0x${string}`, parseUnits(amount, 6)],
+            chainId: base.id,
+          })
+        }
+        setShowSuccess(true)
+        setTimeout(() => setShowSuccess(false), 10000)
+        return
+      } catch (e) {
+        console.error('wagmi donation failed, falling back to SDK/openUrl', e)
+      }
+
       // Always prefer SDK when Mini App context is detected
       try {
         const { sdk } = await import('@farcaster/miniapp-sdk')

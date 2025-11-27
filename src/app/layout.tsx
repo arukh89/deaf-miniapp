@@ -7,6 +7,7 @@ import { ResponseLogger } from "@/components/response-logger";
 import { ReadyNotifier } from "@/components/ready-notifier";
 import FarcasterWrapper from "@/components/FarcasterWrapper";
 import { cookies } from "next/headers";
+import { WagmiProviders } from "@/providers/WagmiProviders";
 
 const APP_URL = "https://deaf-miniapp.vercel.app/";
 const TILE_IMAGE_URL =
@@ -72,7 +73,9 @@ export default async function RootLayout({
       <body className="antialiased">
         {/* Do not remove this component — used to notify parent that the mini-app is ready */}
         <ReadyNotifier />
-        <FarcasterWrapper>{children}</FarcasterWrapper>
+        <WagmiProviders>
+          <FarcasterWrapper>{children}</FarcasterWrapper>
+        </WagmiProviders>
         <ResponseLogger />
       </body>
     </html>
