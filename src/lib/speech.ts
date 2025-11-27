@@ -14,6 +14,7 @@ const SPEECH_LANG_MAP: Record<Language, string> = {
 export class SpeechService {
   private synth: SpeechSynthesis | null = null
   private voices: SpeechSynthesisVoice[] = []
+  private resumeInterval: number | null = null
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -36,24 +37,25 @@ export class SpeechService {
     }
   }
 
-  private async waitForVoices(timeoutMs = 1000): Promise<void> {
+  private async waitForVoices(timeoutMs = 1500): Promise<void> {
     if (!this.synth) return
     // If we already have voices, continue immediately
     if (this.voices.length > 0) return
     await new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => resolve(), timeoutMs)
-      const handler = () => {
-        if (this.synth && this.synth.getVoices().length > 0) {
-          this.voices = this.synth.getVoices()
-          clearTimeout(timeout)
-          resolve()
+      const started = Date.now()
+      const poll = () => {
+        if (!this.synth) return resolve()
+        const list = this.synth.getVoices()
+        if (list.length > 0) {
+          this.voices = list
+          return resolve()
         }
+        if (Date.now() - started > timeoutMs) return resolve()
+        setTimeout(poll, 100)
       }
-      // Try a few times quickly
-      handler()
-      if (this.synth) {
-        this.synth.onvoiceschanged = handler
-      }
+      // also hook event if it fires
+      if (this.synth) this.synth.onvoiceschanged = () => poll()
+      poll()
     })
   }
 
@@ -94,8 +96,29 @@ export class SpeechService {
       utterance.pitch = 1
       utterance.volume = 1
 
-      utterance.onend = () => resolve()
-      utterance.onerror = () => reject(new Error('speech_failed'))
+      // iOS / some WebViews may pause the queue until user gesture; force resume periodically
+      try { this.synth.resume() } catch {}
+      if (this.resumeInterval) {
+        try { clearInterval(this.resumeInterval) } catch {}
+      }
+      this.resumeInterval = window.setInterval(() => {
+        try { this.synth?.resume() } catch {}
+      }, 200)
+
+      utterance.onend = () => {
+        if (this.resumeInterval) {
+          clearInterval(this.resumeInterval)
+          this.resumeInterval = null
+        }
+        resolve()
+      }
+      utterance.onerror = () => {
+        if (this.resumeInterval) {
+          clearInterval(this.resumeInterval)
+          this.resumeInterval = null
+        }
+        reject(new Error('speech_failed'))
+      }
 
       this.synth.speak(utterance)
     })
