@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { sdk } from '@farcaster/miniapp-sdk'
 import type { Language } from '@/types'
 import type { FarcasterUser } from '@/types'
 import { GestureCamera } from '@/components/GestureCamera'
@@ -44,24 +43,20 @@ export default function Page() {
 
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
+      if (!isInFarcaster) return
       try {
-        if (isInFarcaster) {
-          const res = await sdk.quickAuth.fetch('/api/me')
-          if (res.ok) {
-            const userData = await res.json() as FarcasterUser
-            setUser(userData)
-          }
+        const { sdk } = await import('@farcaster/miniapp-sdk')
+        const res = await sdk.quickAuth.fetch('/api/me')
+        if (res.ok) {
+          const userData = (await res.json()) as FarcasterUser
+          setUser(userData)
         }
+        sdk.actions?.ready?.()
       } catch (error) {
         console.error('Auth error:', error)
-      } finally {
-        if (isInFarcaster && sdk.actions && typeof sdk.actions.ready === 'function') {
-          sdk.actions.ready()
-        }
       }
     }
-
-    initAuth()
+    void initAuth()
   }, [isInFarcaster])
 
   const handlePhraseSelect = (phraseKey: string): void => {

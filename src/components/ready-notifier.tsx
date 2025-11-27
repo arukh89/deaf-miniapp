@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect } from 'react'
-import { sdk } from '@farcaster/miniapp-sdk'
 
 export function ReadyNotifier() {
   useEffect(() => {
     const run = async () => {
       try {
+        // Lazy-load SDK only in runtime to avoid desktop fetches
+        const { sdk } = await import('@farcaster/miniapp-sdk')
         // Official way to reveal content in Mini Apps
         await sdk.actions.ready()
       } catch (e) {
