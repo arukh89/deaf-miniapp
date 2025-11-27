@@ -139,9 +139,9 @@ export function GestureCamera({ onCapture, isProcessing = false }: GestureCamera
 
   return (
     <Card className="w-full bg-gradient-to-br from-slate-900/60 to-purple-900/60 backdrop-blur-xl border-purple-500/30 shadow-2xl shadow-purple-500/20">
-      <CardContent className="p-6">
+      <CardContent className="p-3 sm:p-4 md:p-6">
         <div className="space-y-4">
-          <div className="relative aspect-video bg-gradient-to-br from-slate-950 to-purple-950 rounded-lg overflow-hidden border-2 border-purple-500/30 shadow-2xl shadow-purple-500/20">
+          <div className="relative aspect-[3/4] md:aspect-video h-[60vh] md:h-auto bg-gradient-to-br from-slate-950 to-purple-950 rounded-lg overflow-hidden border-2 border-purple-500/30 shadow-2xl shadow-purple-500/20">
             {capturedImage ? (
               <div className="relative w-full h-full">
                 <img

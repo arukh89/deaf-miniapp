@@ -62,35 +62,29 @@ export function DonationSection({ userFid }: DonationSectionProps) {
     const warpcastUrl = `https://warpcast.com/~/send?${params.toString()}`
 
     try {
-
-      // Prefer Mini App SDK in Farcaster to trigger Warplet overlay
-      if (isInFarcaster) {
-        try {
-          const { sdk } = await import('@farcaster/miniapp-sdk')
-          const inMiniApp = await sdk.isInMiniApp().catch(() => false)
-          if (inMiniApp) {
-            // Try native sendToken first
-            try {
-              await sdk.actions.sendToken({
-                token: tokenAddress,
-                amount: amountInSmallestUnit,
-                recipientAddress: CREATOR_WALLET,
-              })
-            } catch {
-              // Fallback to openUrl which Warpcast will intercept as Warplet
-              await sdk.actions.openUrl(warpcastUrl)
-            }
-          } else {
-            // Not in mini app context: navigate current frame
-            window.open(warpcastUrl, '_top')
+      // Always prefer SDK when Mini App context is detected
+      try {
+        const { sdk } = await import('@farcaster/miniapp-sdk')
+        const inMiniApp = await sdk.isInMiniApp().catch(() => false)
+        if (inMiniApp) {
+          // Native Warplet overlay
+          try {
+            await sdk.actions.sendToken({
+              token: tokenAddress,
+              amount: amountInSmallestUnit,
+              recipientAddress: CREATOR_WALLET,
+            })
+          } catch {
+            // Fallback to openUrl (Warpcast intercepts to Warplet)
+            await sdk.actions.openUrl(warpcastUrl)
           }
-        } catch {
-          // SDK not available: navigate current frame
-          window.open(warpcastUrl, '_top')
+        } else {
+          // Not a mini app context → open link (desktop/mobile browser)
+          window.open(warpcastUrl, isInFarcaster ? '_top' : '_blank')
         }
-      } else {
-        // Regular web: open in new tab
-        window.open(warpcastUrl, '_blank')
+      } catch {
+        // SDK not available → open link
+        window.open(warpcastUrl, isInFarcaster ? '_top' : '_blank')
       }
 
       // Show success message
