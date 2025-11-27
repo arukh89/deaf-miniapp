@@ -304,7 +304,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
     <Card className="w-full bg-gradient-to-br from-slate-900/60 to-emerald-900/60 backdrop-blur-xl border-emerald-500/30 shadow-2xl shadow-emerald-500/20">
       <CardContent className="p-3 sm:p-4 md:p-6">
         <div className="space-y-4">
-          <div className="relative aspect-[3/4] md:aspect-video h-[60vh] md:h-auto bg-gradient-to-br from-slate-950 to-emerald-950 rounded-lg overflow-hidden border-2 border-emerald-500/30 shadow-2xl shadow-emerald-500/20">
+          <div className="relative aspect-[3/4] md:aspect-video h-[80vh] md:h-[70vh] bg-gradient-to-br from-slate-950 to-emerald-950 rounded-lg overflow-hidden border-2 border-emerald-500/30 shadow-2xl shadow-emerald-500/20">
             <video
               ref={videoRef}
               autoPlay
