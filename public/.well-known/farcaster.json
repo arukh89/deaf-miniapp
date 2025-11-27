@@ -13,6 +13,11 @@
     "ogTitle": "Gesture Translator",
     "ogImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_e6a8c594-ad66-4fdd-9511-d14d4581c9e1-hlhHK1O5jC2ojzAgKAM7OMvaVgwQdp"
   },
+  "accountAssociation": {
+    "header": "eyJmaWQiOjI1MDcwNCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDA5RDAyRDI1RDBEMDgyZjdGMkUwNGI0ODM4Y0VmZTI3MWIyZGFCMDkifQ",
+    "payload": "eyJkb21haW4iOiJkZWFmLW1pbmlhcHAudmVyY2VsLmFwcCJ9",
+    "signature": "XiKW3tJumbRzUtzANCk8kNTVmIYMXYC/EupS03txCRFY/2GULMcF81wO6eZL/3RDuzJB6UH87NehyCt8YLZ0rhs="
+  },
   "baseBuilder": {
     "allowedAddresses": [
       ""
