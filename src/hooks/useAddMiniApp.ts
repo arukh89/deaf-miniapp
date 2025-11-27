@@ -1,11 +1,11 @@
 'use client'
 
 import { useCallback } from 'react'
-import { sdk } from '@farcaster/miniapp-sdk'
 
 export function useAddMiniApp() {
   const addMiniApp = useCallback(async () => {
     try {
+      const { sdk } = await import('@farcaster/miniapp-sdk')
       // Add to mini app to user's Farcaster profile
       // Check if addMiniApp method exists
       if (sdk.actions && sdk.actions.addMiniApp) {
