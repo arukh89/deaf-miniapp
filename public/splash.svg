@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFB300"/>
+      <stop offset="50%" stop-color="#FF8A00"/>
+      <stop offset="100%" stop-color="#FF4D4D"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="handGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6D28D9"/>
+      <stop offset="100%" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#g1)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- Decorative waves -->
+  <g opacity="0.15" fill="#FFFFFF">
+    <path d="M0 520 C 200 460, 400 580, 600 520 C 800 460, 1000 580, 1200 520 L 1200 630 L 0 630 Z"/>
+    <path opacity="0.5" d="M0 560 C 220 500, 420 620, 620 560 C 820 500, 1020 620, 1200 560 L 1200 630 L 0 630 Z"/>
+  </g>
+
+  <!-- Central hand + heart mark (minimal, friendly) -->
+  <g transform="translate(600,315)" stroke="url(#handGrad)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Palm -->
+    <path d="M-60 40 C -40 100, 40 100, 60 40 L 60 -10 C 60 -25, 45 -25, 45 -10 L 45 15 M 20 -60 C 20 -80, 0 -80, 0 -60 L 0 20 M -25 -50 C -25 -70, -45 -70, -45 -50 L -45 10 M -70 -35 C -70 -55, -90 -55, -90 -35 L -90 20"/>
+    <!-- Wrist curve -->
+    <path d="M-80 60 C -40 110, 40 110, 80 60"/>
+  </g>
+
+  <!-- Subtle center badge -->
+  <g transform="translate(600,315)">
+    <circle r="98" fill="rgba(255,255,255,0.08)"/>
+    <circle r="74" fill="rgba(255,255,255,0.06)"/>
+  </g>
+
+  <!-- Title (kept as shapes for portability) -->
+  <g transform="translate(600,470)" fill="#FFFFFF" opacity="0.9">
+    <text text-anchor="middle" font-family="Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI" font-size="32" font-weight="700">
+      Gesture Translator
+    </text>
+  </g>
+</svg>
