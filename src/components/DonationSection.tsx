@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Heart, ExternalLink, Loader2, Sparkles, Users, Rocket, Shield, FileText, TrendingUp, CheckCircle2, Wallet } from 'lucide-react'
 import { CREATOR_WALLET, CREATOR_USERNAME, CREATOR_FID } from '@/lib/constants'
+import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 import { SuccessMessage } from './SuccessMessage'
 import { ErrorMessage } from './ErrorMessage'
 
@@ -16,6 +17,7 @@ interface DonationSectionProps {
 }
 
 export function DonationSection({ userFid }: DonationSectionProps): JSX.Element {
+  const isInFarcaster = useIsInFarcaster()
   const [amount, setAmount] = useState<string>('')
   const [token, setToken] = useState<'ETH' | 'USDC'>('ETH')
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
@@ -51,7 +53,12 @@ export function DonationSection({ userFid }: DonationSectionProps): JSX.Element 
       // Create a direct link to send tokens via Warplet
       const warpcastUrl = `https://warpcast.com/~/send?token=${encodeURIComponent(tokenAddress)}&amount=${amountInSmallestUnit}&recipientAddress=${CREATOR_WALLET}`
       
-      window.open(warpcastUrl, '_blank')
+      // In Farcaster frame, open in top to avoid popup blockers
+      if (isInFarcaster) {
+        window.open(warpcastUrl, '_top')
+      } else {
+        window.open(warpcastUrl, '_blank')
+      }
       
       // Show success message
       setShowSuccess(true)
@@ -59,7 +66,13 @@ export function DonationSection({ userFid }: DonationSectionProps): JSX.Element 
       
     } catch (error) {
       console.error('Donation error:', error)
-      setError('Unable to open donation page. Please check your connection and try again.')
+      // Fallback: copy link to clipboard for manual open
+      try {
+        await navigator.clipboard.writeText(`https://warpcast.com/~/send?token=${token === 'USDC' ? 'eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' : 'eip155:8453/native'}&amount=${token === 'USDC' ? (parseFloat(amount) * 1_000_000).toString() : (parseFloat(amount) * 1_000_000_000_000_000_000).toString()}&recipientAddress=${CREATOR_WALLET}`)
+        setError('Popup blocked. Link copied — paste into your browser to complete the donation.')
+      } catch {
+        setError('Unable to open donation page. Please check your connection and try again.')
+      }
     } finally {
       setIsProcessing(false)
     }

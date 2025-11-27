@@ -62,15 +62,25 @@ Vercel akan otomatis mendeteksi Next.js. Pastikan settingan:
 - **Framework Preset**: Next.js
 - **Root Directory**: `./` (default)
 - **Build Command**: `pnpm build` (sudah otomatis dari vercel.json)
-- **Output Directory**: `out` (sudah otomatis dari vercel.json)
+- **Output Directory**: `.next` (default Next.js)
 - **Install Command**: `pnpm install`
 
 #### 2.4 Environment Variables (Optional)
-Klik "Environment Variables" dan tambahkan (bisa skip untuk sekarang):
+Klik "Environment Variables" dan tambahkan jika diperlukan (bisa skip untuk versi gratis ini). Gunakan nama variabel yang konsisten dengan `.env.example`:
 
 \`\`\`
-DATABASE_URL=file:./dev.db
-NEXT_PUBLIC_APP_NAME=Gesture Translator
+NEXT_PUBLIC_APP_URL=https://your-app-name.vercel.app
+NEXT_PUBLIC_FARCASTER_APP_NAME=deaf-miniapp
+# Optional: Analytics
+NEXT_PUBLIC_POSTHOG_KEY=
+NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
+# Optional: External translation service (gratis/opsional)
+TRANSLATION_API_URL=
+TRANSLATION_API_KEY=
+# Optional: Creator info (donasi & footer)
+NEXT_PUBLIC_CREATOR_USERNAME=
+NEXT_PUBLIC_CREATOR_FID=
+NEXT_PUBLIC_CREATOR_WALLET=
 \`\`\`
 
 #### 2.5 Deploy!
@@ -214,33 +224,26 @@ Setelah live, promosikan di:
 
 ## 🔐 Langkah 6: Security & Environment
 
-### 6.1 Setup Environment Variables di Vercel
+### 6.1 Setup Environment Variables di Vercel (Opsional)
 
-Untuk fitur advanced (optional):
-
-1. Buka Project Settings → Environment Variables
-2. Tambahkan:
+Untuk project versi gratis ini, environment variables bersifat opsional. Jika ingin menambahkan:
 
 \`\`\`
-OPENAI_API_KEY=sk-...           # untuk AI translation (Pro)
-ELEVENLABS_API_KEY=...          # untuk voice synthesis (Pro)
-NEXT_PUBLIC_POSTHOG_KEY=...     # untuk analytics
+NEXT_PUBLIC_APP_URL=https://your-app-name.vercel.app
+NEXT_PUBLIC_FARCASTER_APP_NAME=deaf-miniapp
+NEXT_PUBLIC_POSTHOG_KEY=
+NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
+TRANSLATION_API_URL=
+TRANSLATION_API_KEY=
+# Creator info (opsional)
+NEXT_PUBLIC_CREATOR_USERNAME=
+NEXT_PUBLIC_CREATOR_FID=
+NEXT_PUBLIC_CREATOR_WALLET=
 \`\`\`
 
-### 6.2 Database (Prisma)
-
-Untuk production database:
-
-**Option A: Vercel Postgres** (Recommended)
-1. Buka Storage → Create Database → Postgres
-2. Copy connection string
-3. Update `DATABASE_URL` di environment variables
-
-**Option B: Neon, Supabase, atau PlanetScale**
-1. Buat account di platform pilihan
-2. Buat database PostgreSQL
-3. Copy connection string
-4. Update environment variables
+Catatan:
+- Tidak ada database dan tidak perlu `DATABASE_URL`.
+- Kunci Pro seperti `OPENAI_API_KEY` atau `ELEVENLABS_API_KEY` tidak digunakan pada versi gratis ini.
 
 ---
 

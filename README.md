@@ -38,6 +38,10 @@ Edit `.env` minimal:
 ```env
 NEXT_PUBLIC_APP_URL=https://your-app-name.vercel.app
 NEXT_PUBLIC_FARCASTER_APP_NAME=deaf-miniapp
+# Creator (opsional - untuk donasi & footer)
+NEXT_PUBLIC_CREATOR_USERNAME=
+NEXT_PUBLIC_CREATOR_FID=
+NEXT_PUBLIC_CREATOR_WALLET=
 # Optional jika pakai layanan terjemahan eksternal gratis
 TRANSLATION_API_URL=
 TRANSLATION_API_KEY=
@@ -70,6 +74,9 @@ git push -u origin main
  - Set Environment Variables:
    - `NEXT_PUBLIC_APP_URL` → akan diisi URL Vercel setelah deploy
    - `NEXT_PUBLIC_FARCASTER_APP_NAME`
+   - `NEXT_PUBLIC_CREATOR_USERNAME` (opsional)
+   - `NEXT_PUBLIC_CREATOR_FID` (opsional)
+   - `NEXT_PUBLIC_CREATOR_WALLET` (opsional)
  - Klik Deploy
 
 3) Update URL Aplikasi

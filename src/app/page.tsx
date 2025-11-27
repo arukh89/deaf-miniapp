@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Hand, MessageSquare, Heart, User, Video } from 'lucide-react'
 import { GESTURE_PHRASES } from '@/lib/constants'
+import { CREATOR_FID, CREATOR_USERNAME } from '@/lib/constants'
 import { useAddMiniApp } from "@/hooks/useAddMiniApp";
 import { useQuickAuth } from "@/hooks/useQuickAuth";
 import { useIsInFarcaster } from "@/hooks/useIsInFarcaster";
@@ -31,35 +32,37 @@ export default function Page(): JSX.Element {
     useEffect(() => {
       const tryAddMiniApp = async () => {
         try {
-          await addMiniApp()
+          if (isInFarcaster) {
+            await addMiniApp()
+          }
         } catch (error) {
           console.error('Failed to add mini app:', error)
         }
-
       }
-
-    
-
       tryAddMiniApp()
-    }, [addMiniApp])
+    }, [addMiniApp, isInFarcaster])
 
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
       try {
-        const res = await sdk.quickAuth.fetch('/api/me')
-        if (res.ok) {
-          const userData = await res.json() as FarcasterUser
-          setUser(userData)
+        if (isInFarcaster) {
+          const res = await sdk.quickAuth.fetch('/api/me')
+          if (res.ok) {
+            const userData = await res.json() as FarcasterUser
+            setUser(userData)
+          }
         }
       } catch (error) {
         console.error('Auth error:', error)
       } finally {
-        sdk.actions.ready()
+        if (isInFarcaster && sdk.actions && typeof sdk.actions.ready === 'function') {
+          sdk.actions.ready()
+        }
       }
     }
 
     initAuth()
-  }, [])
+  }, [isInFarcaster])
 
   const handlePhraseSelect = (phraseKey: string): void => {
     const translations = GESTURE_PHRASES[phraseKey as keyof typeof GESTURE_PHRASES]
@@ -114,13 +117,17 @@ export default function Page(): JSX.Element {
 
   const handleGestureDetected = (phraseKey: string, confidence: number): void => {
     console.log('🎯 Live Gesture Detected:', phraseKey, confidence)
+    // Alphabet fallback: phraseKey like 'letter_l' → display 'L'
+    if (phraseKey.startsWith('letter_')) {
+      const letter = phraseKey.split('_')[1]?.toUpperCase() || ''
+      setTranslatedText(letter)
+      return
+    }
     const translations = GESTURE_PHRASES[phraseKey as keyof typeof GESTURE_PHRASES]
     if (translations) {
       const translated = translations[selectedLanguage]
-      console.log('✅ Translation:', translated, 'Language:', selectedLanguage)
       setTranslatedText(translated)
     } else {
-      console.log('❌ No translation for:', phraseKey)
       setTranslatedText('Translation not available for this gesture.')
     }
   }
@@ -310,7 +317,7 @@ export default function Page(): JSX.Element {
         <div className="mt-8 text-center text-sm">
           <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-4 border border-purple-500/30 shadow-xl">
             <p className="text-purple-300">Built with ❤️ for the deaf community on Base</p>
-            <p className="mt-1 text-purple-400">Developer: @{user?.username || 'ukhy89'} • FID: 250704</p>
+            <p className="mt-1 text-purple-400">Developer: @{CREATOR_USERNAME} • FID: {CREATOR_FID}</p>
           </div>
         </div>
       </div>

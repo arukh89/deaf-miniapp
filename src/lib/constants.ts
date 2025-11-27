@@ -10,9 +10,9 @@ export const LANGUAGES: LanguageOption[] = [
   { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
 ]
 
-export const CREATOR_WALLET = '0xde760afc274878cc6710c438376432a0c68d0037'
-export const CREATOR_FID = 250704
-export const CREATOR_USERNAME = 'ukhy89'
+export const CREATOR_WALLET = process.env.NEXT_PUBLIC_CREATOR_WALLET || '0xde760afc274878cc6710c438376432a0c68d0037'
+export const CREATOR_FID = Number(process.env.NEXT_PUBLIC_CREATOR_FID || '250704')
+export const CREATOR_USERNAME = process.env.NEXT_PUBLIC_CREATOR_USERNAME || 'ukhy89'
 
 export const DONATION_TOKENS: DonationToken[] = [
   { symbol: 'ETH', decimals: 18 },

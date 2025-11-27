@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Camera, Square, Loader2, Hand } from 'lucide-react'
 import { ErrorMessage } from './ErrorMessage'
-import type { Hands, Results } from '@mediapipe/hands'
+import type { Results } from '@mediapipe/hands'
 import { analyzeHandGesture, getGesturePhrase } from '@/lib/gestureRecognition'
 import { Badge } from '@/components/ui/badge'
 import { feedbackService } from '@/lib/feedbackService'
@@ -14,30 +14,59 @@ interface GestureCameraLiveProps {
   onGestureDetected: (phraseKey: string, confidence: number) => void
 }
 
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // If already loaded, resolve immediately
+    const existing = document.querySelector(`script[src="${src}"]`)
+    if (existing) return resolve()
+    const script = document.createElement('script')
+    script.src = src
+    script.async = true
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error(`Failed to load ${src}`))
+    document.head.appendChild(script)
+  })
+}
+
 export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps): JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const processCanvasRef = useRef<HTMLCanvasElement>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [isStreaming, setIsStreaming] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [hands, setHands] = useState<Hands | null>(null)
+  const [hands, setHands] = useState<any>(null)
   const [currentGesture, setCurrentGesture] = useState<string>('')
   const [confidence, setConfidence] = useState<number>(0)
   const [lastTriggeredGesture, setLastTriggeredGesture] = useState<string>('')
   const [lastTriggerTime, setLastTriggerTime] = useState<number>(0)
   const detectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const cooldownUntilRef = useRef<number>(0)
+  const [isMirrored, setIsMirrored] = useState<boolean>(false)
+  // Stability refs
+  const cameraRef = useRef<any>(null)
+  const handsRef = useRef<any>(null)
+  const disposedRef = useRef<boolean>(false)
+  const sendingRef = useRef<boolean>(false)
 
   useEffect(() => {
     const loadMediaPipe = async (): Promise<void> => {
       try {
         setIsLoading(true)
-        const { Hands } = await import('@mediapipe/hands')
-        const { Camera } = await import('@mediapipe/camera_utils')
+        // Load MediaPipe from CDN to avoid ESM interop issues
+        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js')
+        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js')
+        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js')
+
+        const HandsCtor = (window as any).Hands
+        const HAND_CONNECTIONS = (window as any).HAND_CONNECTIONS
+        const drawConnectors = (window as any).drawConnectors
+        const drawLandmarks = (window as any).drawLandmarks
         
-        const handsInstance = new Hands({
+        const handsInstance = new HandsCtor({
           locateFile: (file: string) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`
           }
         })
 
@@ -46,14 +75,16 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
           maxNumHands: 2,
           modelComplexity: 1,
           minDetectionConfidence: 0.3,  // LOWERED from 0.5 for better sensitivity
-          minTrackingConfidence: 0.3    // LOWERED from 0.5 for better sensitivity
+          minTrackingConfidence: 0.3,   // LOWERED from 0.5 for better sensitivity
+          // Use non-selfie; we will flip the processing canvas when preview is mirrored
+          selfieMode: false
         })
 
         handsInstance.onResults((results: Results) => {
           const gestureResult = analyzeHandGesture(results)
           
-          // CLEAR THRESHOLD: Only trigger on confident gestures (0.75+)
-          if (gestureResult.confidence >= 0.75 && gestureResult.gesture !== 'unknown') {
+          // CLEAR THRESHOLD: Trigger on confident gestures (>= 0.70)
+          if (gestureResult.confidence >= 0.70 && gestureResult.gesture !== 'unknown') {
             const phraseKey = getGesturePhrase(gestureResult.gesture)
             
             console.log('✅ HIGH CONFIDENCE GESTURE:', {
@@ -66,21 +97,13 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
             setCurrentGesture(gestureResult.gesture)
             setConfidence(gestureResult.confidence)
             
-            // Prevent rapid duplicates - only trigger if different or after delay
+            // Simple cooldown to allow repeated gestures without restart
             const now = Date.now()
-            const timeSinceLastTrigger = now - lastTriggerTime
-            
-            if (phraseKey !== 'unknown' && 
-                (phraseKey !== lastTriggeredGesture || timeSinceLastTrigger > 2000)) {
-              
+            if (phraseKey !== 'unknown' && now >= cooldownUntilRef.current) {
               console.log('🎯 TRIGGERING TRANSLATION:', phraseKey)
-              
-              // Haptic and audio feedback
               feedbackService.gestureDetected(gestureResult.confidence)
-              
-              // Trigger translation
               onGestureDetected(phraseKey, gestureResult.confidence)
-              
+              cooldownUntilRef.current = now + 1000 // 1s cooldown
               setLastTriggeredGesture(phraseKey)
               setLastTriggerTime(now)
             }
@@ -117,8 +140,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
               canvasCtx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
               
               // Draw landmarks
-              const { drawConnectors, drawLandmarks } = require('@mediapipe/drawing_utils')
-              const { HAND_CONNECTIONS } = require('@mediapipe/hands')
+              // Using globals from drawing_utils and hands
               
               for (const landmarks of results.multiHandLandmarks) {
                 drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
@@ -137,6 +159,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         })
 
         setHands(handsInstance)
+        handsRef.current = handsInstance
       } catch (err) {
         console.error('MediaPipe loading error:', err)
         setError('general')
@@ -174,17 +197,47 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         setIsStreaming(true)
 
         // Start MediaPipe camera
-        if (hands) {
-          const { Camera } = await import('@mediapipe/camera_utils')
-          const camera = new Camera(videoRef.current, {
+        if (handsRef.current) {
+          const CameraCtor = (window as any).Camera
+          const camera = new CameraCtor(videoRef.current, {
             onFrame: async () => {
-              if (videoRef.current && hands) {
-                await hands.send({ image: videoRef.current })
+              const video = videoRef.current
+              const work = processCanvasRef.current
+              if (disposedRef.current) return
+              if (!video || !work || !handsRef.current) return
+              if (video.videoWidth === 0 || video.videoHeight === 0) return
+
+              if (work.width !== video.videoWidth || work.height !== video.videoHeight) {
+                work.width = video.videoWidth
+                work.height = video.videoHeight
+              }
+
+              const ctx = work.getContext('2d')
+              if (!ctx) return
+              // Draw frame. If preview is mirrored, also mirror the processing canvas
+              if (isMirrored) {
+                ctx.save()
+                ctx.scale(-1, 1)
+                ctx.drawImage(video, -work.width, 0, work.width, work.height)
+                ctx.restore()
+              } else {
+                ctx.drawImage(video, 0, 0, work.width, work.height)
+              }
+              if (sendingRef.current) return
+              sendingRef.current = true
+              try {
+                await handsRef.current.send({ image: work })
+              } catch (e) {
+                // swallow send errors when tearing down
+                // console.debug('hands.send error', e)
+              } finally {
+                sendingRef.current = false
               }
             },
             width: 1280,  // Higher resolution
             height: 720
           })
+          cameraRef.current = camera
           camera.start()
         }
       }
@@ -204,26 +257,48 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
     }
   }
 
-  const stopCamera = (): void => {
-    if (stream) {
+  const stopCamera = async (): Promise<void> => {
+    try {
+      // stop mediapipe Camera first to avoid calling send on a disposed Hands
+      if (cameraRef.current && typeof cameraRef.current.stop === 'function') {
+        try { await cameraRef.current.stop() } catch {}
+      }
+      cameraRef.current = null
+    } finally {
+      if (stream) {
       stream.getTracks().forEach((track: MediaStreamTrack) => track.stop())
-      setStream(null)
+        setStream(null)
+      }
       setIsStreaming(false)
       setCurrentGesture('')
       setConfidence(0)
       setLastTriggeredGesture('')
       setLastTriggerTime(0)
+      cooldownUntilRef.current = 0
     }
   }
 
+  // Ensure full teardown on unmount to avoid BindingError
   useEffect(() => {
+    disposedRef.current = false
     return () => {
-      stopCamera()
-      if (hands) {
-        hands.close()
+      disposedRef.current = true
+      // stop camera loop first
+      if (cameraRef.current && typeof cameraRef.current.stop === 'function') {
+        try { cameraRef.current.stop() } catch {}
+        cameraRef.current = null
+      }
+      // stop media tracks
+      if (stream) {
+        try { stream.getTracks().forEach((t) => t.stop()) } catch {}
+      }
+      // close hands last
+      if (handsRef.current && typeof handsRef.current.close === 'function') {
+        try { handsRef.current.close() } catch {}
+        handsRef.current = null
       }
     }
-  }, [hands])
+  }, [])
 
   return (
     <Card className="w-full bg-gradient-to-br from-slate-900/60 to-emerald-900/60 backdrop-blur-xl border-emerald-500/30 shadow-2xl shadow-emerald-500/20">
@@ -236,13 +311,17 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
               playsInline
               muted
               className="w-full h-full object-cover"
+              style={{ transform: isMirrored ? 'scaleX(-1)' : 'none' }}
             />
             <canvas
               ref={canvasRef}
               width={1280}
               height={720}
               className="absolute inset-0 w-full h-full"
+              style={{ transform: isMirrored ? 'scaleX(-1)' : 'none' }}
             />
+            {/* hidden processing canvas */}
+            <canvas ref={processCanvasRef} className="hidden" />
             
             {!isStreaming && !isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-emerald-900/50 to-cyan-900/50 backdrop-blur-sm">
@@ -343,6 +422,10 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
                 Stop Detection
               </Button>
             )}
+
+            <Button onClick={() => setIsMirrored((v) => !v)} variant="outline" size="lg" className="border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/20">
+              {isMirrored ? 'Unmirror' : 'Mirror'}
+            </Button>
           </div>
 
           {isStreaming && (

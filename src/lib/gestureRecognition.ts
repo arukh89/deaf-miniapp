@@ -75,9 +75,19 @@ export function analyzeHandGesture(results: Results): GestureResult {
     return { gesture: 'peace', confidence: 0.92, debugInfo: 'Peace sign detected' }
   }
 
-  // 4. POINTING (please) - only index finger
-  if (extendedCount === 1 && extendedFingers[0] && !extendedFingers[1] && !extendedFingers[2] && !extendedFingers[3]) {
+  // 4a. L-SHAPE (letter L) - index + thumb only
+  if (extendedCount === 1 && extendedFingers[0] && !extendedFingers[1] && !extendedFingers[2] && !extendedFingers[3] && isThumbExtended) {
+    return { gesture: 'lshape', confidence: 0.88, debugInfo: 'L shape detected' }
+  }
+
+  // 4. POINTING (please) - only index finger (thumb not strongly extended)
+  if (extendedCount === 1 && extendedFingers[0] && !extendedFingers[1] && !extendedFingers[2] && !extendedFingers[3] && !isThumbExtended) {
     return { gesture: 'pointing', confidence: 0.90, debugInfo: 'Pointing detected' }
+  }
+
+  // 4b. HORNS (love/rock) - index & pinky only
+  if (extendedCount === 2 && extendedFingers[0] && !extendedFingers[1] && !extendedFingers[2] && extendedFingers[3]) {
+    return { gesture: 'horns', confidence: 0.88, debugInfo: 'Horns detected' }
   }
 
   // 5. OK SIGN (thank you) - check circle between thumb and index
@@ -89,14 +99,24 @@ export function analyzeHandGesture(results: Results): GestureResult {
     return { gesture: 'oksign', confidence: 0.90, debugInfo: 'OK sign detected' }
   }
 
-  // 6. OPEN PALM (hello/stop) - all fingers extended
-  if (extendedCount === 4 && isThumbExtended) {
+  // 6. OPEN PALM (hello/stop) - all fingers extended (thumb may vary)
+  if (extendedCount === 4 || (extendedCount === 3 && isThumbExtended)) {
     return { gesture: 'openpalm', confidence: 0.88, debugInfo: 'Open palm detected' }
   }
 
   // 7. THREE FINGERS (help/wait) - index, middle, ring
   if (extendedCount === 3 && extendedFingers[0] && extendedFingers[1] && extendedFingers[2]) {
     return { gesture: 'threefingers', confidence: 0.85, debugInfo: 'Three fingers detected' }
+  }
+
+  // 7b. SHAKA (friend/call) - thumb and pinky only
+  if (extendedCount === 1 && isThumbExtended && extendedFingers[3] && !extendedFingers[0] && !extendedFingers[1] && !extendedFingers[2]) {
+    return { gesture: 'shaka', confidence: 0.86, debugInfo: 'Shaka detected' }
+  }
+
+  // 7c. FOUR FINGERS (stop) - four fingers extended, thumb closed
+  if (extendedCount === 4 && !isThumbExtended) {
+    return { gesture: 'fourfingers', confidence: 0.84, debugInfo: 'Four fingers detected' }
   }
 
   // 8. FIST (understand) - all fingers closed
@@ -131,6 +151,11 @@ export function getGesturePhrase(gesture: string): string {
     'fist': 'understand',
     'pinkyout': 'love',
     'wave': 'goodbye',
+    'horns': 'love',
+    'shaka': 'friend',
+    'fourfingers': 'stop',
+    // Alphabet (basic static forms)
+    'lshape': 'letter_l',
   }
   
   const result = gestureMap[gesture] || 'unknown'
@@ -141,11 +166,24 @@ export function getGesturePhrase(gesture: string): string {
 // Analyze captured image
 export async function analyzeGestureFromImage(imageUrl: string): Promise<GestureResult> {
   try {
-    const { Hands } = await import('@mediapipe/hands')
-    
-    const hands = new Hands({
+    const loadScript = (src: string): Promise<void> => new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${src}"]`)
+      if (existing) return resolve()
+      const s = document.createElement('script')
+      s.src = src
+      s.async = true
+      s.onload = () => resolve()
+      s.onerror = () => reject(new Error(`Failed to load ${src}`))
+      document.head.appendChild(s)
+    })
+
+    // Ensure MediaPipe Hands global is available
+    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js')
+    const HandsCtor = (window as any).Hands
+
+    const hands = new HandsCtor({
       locateFile: (file: string) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`
       }
     })
 
@@ -153,7 +191,8 @@ export async function analyzeGestureFromImage(imageUrl: string): Promise<Gesture
       maxNumHands: 1,
       modelComplexity: 1,
       minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
+      minTrackingConfidence: 0.5,
+      selfieMode: true
     })
 
     return new Promise((resolve) => {
