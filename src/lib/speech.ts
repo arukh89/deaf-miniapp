@@ -36,6 +36,27 @@ export class SpeechService {
     }
   }
 
+  private async waitForVoices(timeoutMs = 1000): Promise<void> {
+    if (!this.synth) return
+    // If we already have voices, continue immediately
+    if (this.voices.length > 0) return
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => resolve(), timeoutMs)
+      const handler = () => {
+        if (this.synth && this.synth.getVoices().length > 0) {
+          this.voices = this.synth.getVoices()
+          clearTimeout(timeout)
+          resolve()
+        }
+      }
+      // Try a few times quickly
+      handler()
+      if (this.synth) {
+        this.synth.onvoiceschanged = handler
+      }
+    })
+  }
+
   private getVoiceForLanguage(language: Language): SpeechSynthesisVoice | null {
     const langCode = SPEECH_LANG_MAP[language]
     
@@ -53,28 +74,28 @@ export class SpeechService {
 
   speak(text: string, language: Language): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!this.synth) {
-        reject(new Error('Speech synthesis not supported'))
-        return
-      }
+      if (!this.synth) return reject(new Error('speech_not_supported'))
 
       // Cancel any ongoing speech
       this.synth.cancel()
 
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = SPEECH_LANG_MAP[language]
-      
-      const voice = this.getVoiceForLanguage(language)
-      if (voice) {
-        utterance.voice = voice
-      }
+
+      // Ensure voices are loaded before picking one (best-effort)
+      void this.waitForVoices().then(() => {
+        const voice = this.getVoiceForLanguage(language)
+        if (voice) {
+          utterance.voice = voice
+        }
+      })
 
       utterance.rate = 0.9
       utterance.pitch = 1
       utterance.volume = 1
 
       utterance.onend = () => resolve()
-      utterance.onerror = (event: SpeechSynthesisErrorEvent) => reject(event.error)
+      utterance.onerror = () => reject(new Error('speech_failed'))
 
       this.synth.speak(utterance)
     })
