@@ -21,7 +21,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://*.farcaster.xyz https://warpcast.com;",
+            value: "frame-ancestors 'self' https://*.farcaster.xyz https://warpcast.com https://*.warpcast.com https://deaf-miniapp.vercel.app;",
           },
         ],
       },
