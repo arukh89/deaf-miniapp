@@ -8,15 +8,21 @@ export const LANGUAGES: LanguageOption[] = [
   { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' },
   { code: 'th', name: 'Thai', nativeName: 'ไทย', flag: '🇹🇭' },
   { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
 ]
 
-export const CREATOR_WALLET = process.env.NEXT_PUBLIC_CREATOR_WALLET || '0xde760afc274878cc6710c438376432a0c68d0037'
+export const CREATOR_WALLET = process.env.NEXT_PUBLIC_CREATOR_WALLET || ''
 export const CREATOR_FID = Number(process.env.NEXT_PUBLIC_CREATOR_FID || '250704')
 export const CREATOR_USERNAME = process.env.NEXT_PUBLIC_CREATOR_USERNAME || 'ukhy89'
 
+// Token addresses moved to env (no hardcode). Leave undefined when not provided.
+const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS
+const SDEAFS_ADDRESS = process.env.NEXT_PUBLIC_SDEAFS_ADDRESS
+
 export const DONATION_TOKENS: DonationToken[] = [
   { symbol: 'ETH', decimals: 18 },
-  { symbol: 'USDC', address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6 },
+  { symbol: 'USDC', address: USDC_ADDRESS || undefined, decimals: 6 },
+  { symbol: 'sDEAFs', address: SDEAFS_ADDRESS || undefined, decimals: 18 }, // decimals can be read on-chain
 ]
 
 export const BASE_CHAIN_ID = 8453
@@ -32,6 +38,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'مرحبا',
     th: 'สวัสดี',
     vi: 'Xin chào',
+    ko: '안녕하세요',
   },
   goodbye: {
     en: 'Goodbye',
@@ -41,6 +48,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'وداعا',
     th: 'ลาก่อน',
     vi: 'Tạm biệt',
+    ko: '안녕히 가세요',
   },
   goodmorning: {
     en: 'Good morning',
@@ -50,6 +58,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'صباح الخير',
     th: 'สวัสดีตอนเช้า',
     vi: 'Chào buổi sáng',
+    ko: '좋은 아침',
   },
   goodnight: {
     en: 'Good night',
@@ -59,6 +68,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'تصبح على خير',
     th: 'ราตรีสวัสดิ์',
     vi: 'Chúc ngủ ngon',
+    ko: '좋은 밤',
   },
   howareyou: {
     en: 'How are you?',
@@ -68,6 +78,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'كيف حالك؟',
     th: 'สบายดีไหม?',
     vi: 'Bạn khỏe không?',
+    ko: '잘 지내세요?',
   },
   nice: {
     en: 'Nice to meet you',
@@ -77,6 +88,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'سعيد بلقائك',
     th: 'ยินดีที่ได้รู้จัก',
     vi: 'Rất vui được gặp bạn',
+    ko: '만나서 반가워요',
   },
   
   // Polite Expressions
@@ -88,6 +100,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'شكرا',
     th: 'ขอบคุณ',
     vi: 'Cảm ơn',
+    ko: '감사합니다',
   },
   thankyouverymuch: {
     en: 'Thank you very much',
@@ -97,6 +110,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'شكرا جزيلا',
     th: 'ขอบคุณมาก',
     vi: 'Cảm ơn rất nhiều',
+    ko: '정말 감사합니다',
   },
   please: {
     en: 'Please',
@@ -106,6 +120,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'من فضلك',
     th: 'กรุณา',
     vi: 'Làm ơn',
+    ko: '부탁합니다',
   },
   sorry: {
     en: 'Sorry',
@@ -115,6 +130,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'آسف',
     th: 'ขอโทษ',
     vi: 'Xin lỗi',
+    ko: '미안합니다',
   },
   excuseme: {
     en: 'Excuse me',
@@ -124,6 +140,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'عفوا',
     th: 'ขอโทษ',
     vi: 'Xin lỗi',
+    ko: '실례합니다',
   },
   youarewelcome: {
     en: 'You are welcome',
@@ -133,6 +150,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'على الرحب',
     th: 'ไม่เป็นไร',
     vi: 'Không có gì',
+    ko: '천만에요',
   },
   
   // Agreement & Understanding
@@ -144,6 +162,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'نعم',
     th: 'ใช่',
     vi: 'Vâng',
+    ko: '네',
   },
   no: {
     en: 'No',
@@ -153,6 +172,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'لا',
     th: 'ไม่',
     vi: 'Không',
+    ko: '아니요',
   },
   understand: {
     en: 'I understand',
@@ -162,6 +182,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أفهم',
     th: 'ฉันเข้าใจ',
     vi: 'Tôi hiểu',
+    ko: '이해했어요',
   },
   notunderstand: {
     en: "I don't understand",
@@ -171,6 +192,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'لا أفهم',
     th: 'ฉันไม่เข้าใจ',
     vi: 'Tôi không hiểu',
+    ko: '이해하지 못했어요',
   },
   agree: {
     en: 'I agree',
@@ -180,6 +202,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أوافق',
     th: 'ฉันเห็นด้วย',
     vi: 'Tôi đồng ý',
+    ko: '동의합니다',
   },
   maybe: {
     en: 'Maybe',
@@ -189,6 +212,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'ربما',
     th: 'อาจจะ',
     vi: 'Có thể',
+    ko: '아마도',
   },
   
   // Requests & Needs
@@ -200,6 +224,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'ساعدني من فضلك',
     th: 'ช่วยฉันด้วย',
     vi: 'Xin hãy giúp tôi',
+    ko: '도와주세요',
   },
   wait: {
     en: 'Please wait',
@@ -209,6 +234,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'انتظر من فضلك',
     th: 'โปรดรอสักครู่',
     vi: 'Vui lòng đợi',
+    ko: '잠시만요',
   },
   repeat: {
     en: 'Please repeat',
@@ -218,6 +244,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'كرر من فضلك',
     th: 'กรุณาพูดอีกครั้ง',
     vi: 'Xin hãy lặp lại',
+    ko: '다시 말해 주세요',
   },
   slowly: {
     en: 'Please speak slowly',
@@ -227,6 +254,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'تحدث ببطء من فضلك',
     th: 'กรุณาพูดช้าๆ',
     vi: 'Xin hãy nói chậm',
+    ko: '천천히 말해 주세요',
   },
   water: {
     en: 'I need water',
@@ -236,6 +264,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أحتاج إلى ماء',
     th: 'ฉันต้องการน้ำ',
     vi: 'Tôi cần nước',
+    ko: '물이 필요해요',
   },
   bathroom: {
     en: 'Where is the bathroom?',
@@ -245,6 +274,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أين الحمام؟',
     th: 'ห้องน้ำอยู่ที่ไหน?',
     vi: 'Nhà vệ sinh ở đâu?',
+    ko: '화장실이 어디에 있어요?',
   },
   
   // Emotions & States
@@ -256,6 +286,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أنا سعيد',
     th: 'ฉันมีความสุข',
     vi: 'Tôi vui',
+    ko: '행복해요',
   },
   sad: {
     en: 'I am sad',
@@ -265,6 +296,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أنا حزين',
     th: 'ฉันเศร้า',
     vi: 'Tôi buồn',
+    ko: '슬퍼요',
   },
   tired: {
     en: 'I am tired',
@@ -274,6 +306,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أنا متعب',
     th: 'ฉันเหนื่อย',
     vi: 'Tôi mệt',
+    ko: '피곤해요',
   },
   sick: {
     en: 'I am sick',
@@ -283,6 +316,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أنا مريض',
     th: 'ฉันป่วย',
     vi: 'Tôi bị ốm',
+    ko: '아파요',
   },
   hungry: {
     en: 'I am hungry',
@@ -292,6 +326,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أنا جائع',
     th: 'ฉันหิว',
     vi: 'Tôi đói',
+    ko: '배고파요',
   },
   
   // Places & Directions
@@ -303,6 +338,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أريد أن أذهب إلى المنزل',
     th: 'ฉันอยากกลับบ้าน',
     vi: 'Tôi muốn về nhà',
+    ko: '집에 가고 싶어요',
   },
   hospital: {
     en: 'Take me to the hospital',
@@ -312,6 +348,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'خذني إلى المستشفى',
     th: 'พาฉันไปโรงพยาบาล',
     vi: 'Đưa tôi đến bệnh viện',
+    ko: '병원에 데려가 주세요',
   },
   left: {
     en: 'Turn left',
@@ -321,6 +358,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'انعطف يسارا',
     th: 'เลี้ยวซ้าย',
     vi: 'Rẽ trái',
+    ko: '왼쪽으로 도세요',
   },
   right: {
     en: 'Turn right',
@@ -330,6 +368,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'انعطف يمينا',
     th: 'เลี้ยวขวา',
     vi: 'Rẽ phải',
+    ko: '오른쪽으로 도세요',
   },
   stop: {
     en: 'Stop',
@@ -339,6 +378,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'توقف',
     th: 'หยุด',
     vi: 'Dừng lại',
+    ko: '멈추세요',
   },
   
   // Emergency & Important
@@ -350,6 +390,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'هذه حالة طارئة!',
     th: 'นี่คือเหตุฉุกเฉิน!',
     vi: 'Đây là tình huống khẩn cấp!',
+    ko: '비상 상황입니다!',
   },
   danger: {
     en: 'Danger!',
@@ -359,6 +400,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'خطر!',
     th: 'อันตราย!',
     vi: 'Nguy hiểm!',
+    ko: '위험!',
   },
   callpolice: {
     en: 'Call the police',
@@ -368,6 +410,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'اتصل بالشرطة',
     th: 'โทรหาตำรวจ',
     vi: 'Gọi cảnh sát',
+    ko: '경찰을 불러 주세요',
   },
   
   // Daily Life
@@ -379,6 +422,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'دعونا نأكل',
     th: 'มากินกันเถอะ',
     vi: 'Chúng ta ăn thôi',
+    ko: '같이 먹어요',
   },
   drink: {
     en: 'I want to drink',
@@ -388,6 +432,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أريد أن أشرب',
     th: 'ฉันอยากดื่ม',
     vi: 'Tôi muốn uống',
+    ko: '마시고 싶어요',
   },
   sleep: {
     en: 'I want to sleep',
@@ -397,6 +442,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أريد أن أنام',
     th: 'ฉันอยากนอน',
     vi: 'Tôi muốn ngủ',
+    ko: '자고 싶어요',
   },
   beautiful: {
     en: 'Beautiful',
@@ -406,6 +452,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'جميل',
     th: 'สวย',
     vi: 'Đẹp',
+    ko: '아름다워요',
   },
   love: {
     en: 'I love you',
@@ -415,6 +462,7 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أحبك',
     th: 'ฉันรักคุณ',
     vi: 'Anh yêu em',
+    ko: '사랑해요',
   },
   friend: {
     en: 'You are my friend',
@@ -424,5 +472,6 @@ export const GESTURE_PHRASES: Record<string, Record<string, string>> = {
     ar: 'أنت صديقي',
     th: 'คุณเป็นเพื่อนของฉัน',
     vi: 'Bạn là bạn của tôi',
+    ko: '당신은 내 친구예요',
   },
 }
