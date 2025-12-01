@@ -1,9 +1,18 @@
 "use client"
 
-import { erc20Abi, parseEther, parseUnits } from "viem"
+import { erc20Abi, parseEther, parseUnits, createPublicClient, custom } from "viem"
+import { base } from "viem/chains"
 import { getMiniAppProvider, getMiniAppWalletClient, ensureBaseChain, getPrimaryAccount } from "./miniappProvider"
 
 type Hex = `0x${string}`
+
+export async function getErc20Decimals(token: Hex): Promise<number> {
+  const provider = await getMiniAppProvider()
+  if (!provider) throw new Error('no_provider')
+  const pc = createPublicClient({ chain: base, transport: custom(provider) })
+  const dec = await pc.readContract({ address: token, abi: erc20Abi, functionName: 'decimals' })
+  return Number(dec)
+}
 
 export async function sendEthViaMiniApp(params: { to: Hex; amountEth: string }) {
   const provider = await getMiniAppProvider()
