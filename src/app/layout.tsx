@@ -12,7 +12,7 @@ import { WagmiProviders } from "@/providers/WagmiProviders";
 const APP_URL = "https://deaf-miniapp.vercel.app/";
 const TILE_IMAGE_URL =
   "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_e6a8c594-ad66-4fdd-9511-d14d4581c9e1-hlhHK1O5jC2ojzAgKAM7OMvaVgwQdp";
-const SPLASH_IMAGE_URL = APP_URL + "splash.svg";
+const SPLASH_IMAGE_URL = APP_URL + "splash.png";
 
 // Follow Farcaster mini-app meta spec exactly
 const frame = {
