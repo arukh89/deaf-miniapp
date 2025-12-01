@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
+const isWin = process.platform === 'win32'
 const nextConfig = {
-  output: 'standalone',
+  // Avoid symlink errors on Windows local builds
+  output: isWin ? undefined : 'standalone',
   images: {
     remotePatterns: [
       {
