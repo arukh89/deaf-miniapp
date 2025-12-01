@@ -9,6 +9,7 @@ const SPEECH_LANG_MAP: Record<Language, string> = {
   ar: 'ar-SA',
   th: 'th-TH',
   vi: 'vi-VN',
+  ko: 'ko-KR',
 }
 
 export class SpeechService {

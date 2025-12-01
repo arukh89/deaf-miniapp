@@ -62,7 +62,7 @@ export default function Page() {
   const handlePhraseSelect = (phraseKey: string): void => {
     const translations = GESTURE_PHRASES[phraseKey as keyof typeof GESTURE_PHRASES]
     if (translations) {
-      const translated = translations[selectedLanguage]
+      const translated = translations[selectedLanguage] || translations.en
       setTranslatedText(translated)
     }
   }
@@ -76,7 +76,9 @@ export default function Page() {
     for (const key of Object.keys(GESTURE_PHRASES)) {
       const englishPhrase = GESTURE_PHRASES[key as keyof typeof GESTURE_PHRASES].en.toLowerCase()
       if (lowerText.includes(englishPhrase)) {
-        const translated = GESTURE_PHRASES[key as keyof typeof GESTURE_PHRASES][selectedLanguage]
+        const translated =
+          GESTURE_PHRASES[key as keyof typeof GESTURE_PHRASES][selectedLanguage] ||
+          GESTURE_PHRASES[key as keyof typeof GESTURE_PHRASES].en
         setTranslatedText(translated)
         return
       }
@@ -96,7 +98,7 @@ export default function Page() {
       console.log('🎯 Looking up translation for:', gesture)
       const translations = GESTURE_PHRASES[gesture as keyof typeof GESTURE_PHRASES]
       if (translations) {
-        const translated = translations[selectedLanguage]
+        const translated = translations[selectedLanguage] || translations.en
         console.log('✅ Translation found:', translated)
         setTranslatedText(translated)
       } else {
@@ -120,7 +122,7 @@ export default function Page() {
     }
     const translations = GESTURE_PHRASES[phraseKey as keyof typeof GESTURE_PHRASES]
     if (translations) {
-      const translated = translations[selectedLanguage]
+      const translated = translations[selectedLanguage] || translations.en
       setTranslatedText(translated)
     } else {
       setTranslatedText('Translation not available for this gesture.')
@@ -290,7 +292,7 @@ export default function Page() {
                 <li>🎥 Live AI gesture recognition with MediaPipe</li>
                 <li>📸 AI gesture analysis from captured photos</li>
                 <li>👋 42+ comprehensive gesture phrases</li>
-                <li>🗣️ Text-to-speech in 7 languages</li>
+                <li>🗣️ Text-to-speech in 8 languages</li>
                 <li>💰 Direct donation support on Base</li>
               </ul>
             </div>

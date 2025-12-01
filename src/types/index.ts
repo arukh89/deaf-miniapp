@@ -6,7 +6,7 @@ export interface FarcasterUser {
   bio?: string
 }
 
-export type Language = 'en' | 'id' | 'zh' | 'ru' | 'ar' | 'th' | 'vi'
+export type Language = 'en' | 'id' | 'zh' | 'ru' | 'ar' | 'th' | 'vi' | 'ko'
 
 export interface LanguageOption {
   code: Language
@@ -25,7 +25,7 @@ export interface GestureTranslation {
 }
 
 export interface DonationToken {
-  symbol: 'ETH' | 'USDC'
+  symbol: 'ETH' | 'USDC' | 'sDEAFs'
   address?: string
   decimals: number
 }
