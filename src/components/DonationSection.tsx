@@ -11,7 +11,8 @@ import { CREATOR_WALLET, CREATOR_USERNAME, CREATOR_FID, DONATION_TOKENS, BASE_CH
 import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 import { SuccessMessage } from './SuccessMessage'
 import { ErrorMessage } from './ErrorMessage'
-import { sendEthViaMiniApp, sendErc20ViaMiniApp } from '@/lib/tokenSender'
+import { sendEthViaMiniApp, sendErc20ViaMiniApp, getErc20Decimals } from '@/lib/tokenSender'
+import { parseUnits } from 'viem'
 
 interface DonationSectionProps {
   userFid?: number
@@ -21,7 +22,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
   const isInFarcaster = useIsInFarcaster()
   // direct viem path via Mini App provider
   const [amount, setAmount] = useState<string>('')
-  const [token, setToken] = useState<'ETH' | 'USDC'>('ETH')
+  const [token, setToken] = useState<'ETH' | 'USDC' | 'sDEAFs'>('ETH')
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [showSuccess, setShowSuccess] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
@@ -43,17 +44,28 @@ export function DonationSection({ userFid }: DonationSectionProps) {
     setIsProcessing(true)
     setError('')
 
-    // Resolve token data (no inline addresses to satisfy security checks)
+    // Resolve token data
     const usdcToken = DONATION_TOKENS.find((t) => t.symbol === 'USDC' && t.address)
-    const tokenAddress =
-      token === 'USDC' && usdcToken?.address
-        ? `eip155:${BASE_CHAIN_ID}/erc20:${usdcToken.address}`
-        : `eip155:${BASE_CHAIN_ID}/native`
+    const sdeafsToken = DONATION_TOKENS.find((t) => t.symbol === 'sDEAFs' && t.address)
+    const isErc20 = token !== 'ETH'
+    const selectedErc20 = token === 'USDC' ? usdcToken : token === 'sDEAFs' ? sdeafsToken : null
+    // decimals: ETH=18, USDC=6, sDEAFs=read on-chain (fallback ke constants)
+    const decimals =
+      token === 'ETH'
+        ? 18
+        : token === 'USDC'
+        ? 6
+        : sdeafsToken?.address
+        ? await getErc20Decimals(sdeafsToken.address as `0x${string}`).catch(() => sdeafsToken?.decimals ?? 18)
+        : 18
 
-    const amountInSmallestUnit =
-      token === 'USDC'
-        ? Math.round(parseFloat(amount) * 1_000_000).toString()
-        : (parseFloat(amount) * 1_000_000_000_000_000_000).toString()
+    // deeplink token param
+    const tokenAddress = isErc20 && selectedErc20?.address
+      ? `eip155:${BASE_CHAIN_ID}/erc20:${selectedErc20.address}`
+      : `eip155:${BASE_CHAIN_ID}/native`
+
+    // amount smallest unit (pakai viem agar akurat)
+    const amountInSmallestUnit = parseUnits(amount, decimals).toString()
 
     // Build Warpcast deep link (redundant recipient keys for safety)
     const params = new URLSearchParams({
@@ -73,12 +85,12 @@ export function DonationSection({ userFid }: DonationSectionProps) {
           if (token === 'ETH') {
             await sendEthViaMiniApp({ to: CREATOR_WALLET as `0x${string}`, amountEth: amount })
           } else {
-            if (!usdcToken?.address) throw new Error('USDC token address unavailable')
+            if (!selectedErc20?.address) throw new Error('Token address unavailable')
             await sendErc20ViaMiniApp({
-              token: usdcToken.address as `0x${string}`,
+              token: selectedErc20.address as `0x${string}`,
               to: CREATOR_WALLET as `0x${string}`,
               amount,
-              decimals: 6,
+              decimals,
             })
           }
           setShowSuccess(true)
@@ -182,7 +194,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
               <Wallet className="w-5 h-5" />
               1. Select Token
             </Label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <Button
                 variant={token === 'ETH' ? 'default' : 'outline'}
                 onClick={() => setToken('ETH')}
@@ -204,6 +216,17 @@ export function DonationSection({ userFid }: DonationSectionProps) {
                 }`}
               >
                 <span className="mr-2">💵</span> USDC
+              </Button>
+              <Button
+                variant={token === 'sDEAFs' ? 'default' : 'outline'}
+                onClick={() => setToken('sDEAFs')}
+                className={`w-full h-14 text-base font-bold transition-all ${
+                  token === 'sDEAFs'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg'
+                    : 'hover:border-emerald-400 hover:bg-emerald-50'
+                }`}
+              >
+                <span className="mr-2">💠</span> sDEAFs
               </Button>
             </div>
           </div>
