@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,7 @@ import { SuccessMessage } from './SuccessMessage'
 import { ErrorMessage } from './ErrorMessage'
 import { sendEthViaMiniApp, sendErc20ViaMiniApp, getErc20Decimals } from '@/lib/tokenSender'
 import { parseUnits } from 'viem'
+import { estimateSdeafsForUsd } from '@/lib/mintclubPricing'
 
 interface DonationSectionProps {
   userFid?: number
@@ -27,6 +28,8 @@ export function DonationSection({ userFid }: DonationSectionProps) {
   const [showSuccess, setShowSuccess] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null)
+  const [sdeafsEstimate, setSdeafsEstimate] = useState<string | null>(null)
+  const [pricingError, setPricingError] = useState<string | null>(null)
 
   const quickAmounts = [5, 10, 20, 50]
 
@@ -34,6 +37,38 @@ export function DonationSection({ userFid }: DonationSectionProps) {
     setAmount(quickAmount.toString())
     setSelectedAmount(quickAmount)
   }
+
+  // Live estimate for sDEAFs when amount is treated as USD
+  useEffect(() => {
+    let cancelled = false
+    async function run() {
+      if (token !== 'sDEAFs') {
+        setSdeafsEstimate(null)
+        setPricingError(null)
+        return
+      }
+      const v = parseFloat(amount)
+      if (!amount || isNaN(v) || v <= 0) {
+        setSdeafsEstimate(null)
+        setPricingError(null)
+        return
+      }
+      setPricingError(null)
+      try {
+        const est = await estimateSdeafsForUsd(v)
+        if (!cancelled) setSdeafsEstimate(est)
+      } catch (e) {
+        if (!cancelled) {
+          setSdeafsEstimate(null)
+          setPricingError('rate_unavailable')
+        }
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [token, amount])
 
   const handleDonate = async (): Promise<void> => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -64,8 +99,19 @@ export function DonationSection({ userFid }: DonationSectionProps) {
       ? `eip155:${BASE_CHAIN_ID}/erc20:${selectedErc20.address}`
       : `eip155:${BASE_CHAIN_ID}/native`
 
+    // Interpret amount: when sDEAFs is selected, amount field represents USD and we convert to token units
+    let amountToken = amount
+    if (token === 'sDEAFs') {
+      try {
+        const est = await estimateSdeafsForUsd(parseFloat(amount))
+        amountToken = est
+      } catch (e) {
+        console.warn('USD→sDEAFs rate unavailable, falling back to manual token input')
+      }
+    }
+
     // amount smallest unit (pakai viem agar akurat)
-    const amountInSmallestUnit = parseUnits(amount, decimals).toString()
+    const amountInSmallestUnit = parseUnits(amountToken, decimals).toString()
 
     // Build Warpcast deep link (redundant recipient keys for safety)
     const params = new URLSearchParams({
@@ -89,7 +135,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
             await sendErc20ViaMiniApp({
               token: selectedErc20.address as `0x${string}`,
               to: CREATOR_WALLET as `0x${string}`,
-              amount,
+              amount: amountToken,
               decimals,
             })
           }
@@ -235,7 +281,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
           <div className="space-y-3">
             <Label className="text-lg font-bold text-amber-900 flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
-              2. Choose Amount
+              2. Choose Amount{token === 'sDEAFs' ? ' (USD)' : ''}
             </Label>
             
             {/* Quick Amount Buttons - Luxurious */}
@@ -273,6 +319,11 @@ export function DonationSection({ userFid }: DonationSectionProps) {
                 min="0"
                 className="h-12 text-lg border-2 border-amber-300 focus:border-amber-500 focus:ring-amber-500"
               />
+              {token === 'sDEAFs' && amount && parseFloat(amount) > 0 && (
+                <p className="text-xs text-amber-700">
+                  ≈ {sdeafsEstimate ? `${sdeafsEstimate} sDEAFs` : pricingError ? 'rate unavailable — enter tokens manually' : 'fetching rate…'}
+                </p>
+              )}
             </div>
           </div>
 
@@ -387,7 +438,10 @@ export function DonationSection({ userFid }: DonationSectionProps) {
             ) : (
               <>
                 <Heart className="w-6 h-6 mr-2 fill-white animate-pulse" />
-                {amount ? `Donate ${amount} ${token}` : 'Donate'} via Warplet
+                {token === 'sDEAFs'
+                  ? (amount ? `Donate $${amount} → ≈ ${sdeafsEstimate ?? '…'} sDEAFs` : 'Donate')
+                  : (amount ? `Donate ${amount} ${token}` : 'Donate')}
+                 via Warplet
                 <ExternalLink className="w-5 h-5 ml-2" />
               </>
             )}
