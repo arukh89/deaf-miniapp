@@ -12,7 +12,7 @@ import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 import { SuccessMessage } from './SuccessMessage'
 import { ErrorMessage } from './ErrorMessage'
 import { sendEthViaMiniApp, sendErc20ViaMiniApp, getErc20Decimals } from '@/lib/tokenSender'
-import { parseUnits } from 'viem'
+import { parseUnits, InsufficientFundsError } from 'viem'
 import { estimateSdeafsForUsd } from '@/lib/mintclubPricing'
 
 interface DonationSectionProps {
@@ -144,6 +144,12 @@ export function DonationSection({ userFid }: DonationSectionProps) {
           return
         }
       } catch (e) {
+        const err = e as any
+        // viem throws InsufficientFundsError or our pre-check throws "insufficient_balance"
+        if (err?.message === 'insufficient_balance' || err instanceof InsufficientFundsError) {
+          setError('Insufficient balance in your Warplet wallet.')
+          return
+        }
         console.error('miniapp viem send failed, falling back to openUrl', e)
       }
 

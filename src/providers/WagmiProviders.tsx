@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo } from "react"
 import { WagmiProvider, createConfig } from "wagmi"
-import { injected } from "wagmi/connectors"
+import { farcasterMiniApp as miniAppConnector } from "@farcaster/miniapp-wagmi-connector"
 import { base } from "viem/chains"
 import { http } from "viem"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -13,7 +13,7 @@ const queryClient = new QueryClient()
 const config = createConfig({
   chains: [base],
   transports: { [base.id]: http() },
-  connectors: [injected()],
+  connectors: [miniAppConnector()],
   ssr: true,
   multiInjectedProviderDiscovery: true,
 })

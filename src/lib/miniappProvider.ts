@@ -7,6 +7,15 @@ import { base } from "viem/chains"
 export async function getMiniAppProvider(): Promise<EIP1193Provider | null> {
   if (typeof window === "undefined") return null
 
+  // 0) Prefer Farcaster Mini App SDK provider (Warplet)
+  try {
+    const { sdk } = await import("@farcaster/miniapp-sdk")
+    const p = await sdk.wallet.getEthereumProvider().catch(() => null)
+    if (p && (p as any)?.request) return p as EIP1193Provider
+  } catch {
+    // ignore and continue to fallbacks
+  }
+
   // 1) Standard injection
   const eth: any = (window as any).ethereum
   if (eth?.providers?.length) {
