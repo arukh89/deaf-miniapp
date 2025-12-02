@@ -82,46 +82,48 @@ export class SpeechService {
       // Cancel any ongoing speech
       this.synth.cancel()
 
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = SPEECH_LANG_MAP[language]
+      const run = async () => {
+        // Ensure voices are loaded BEFORE speaking (important on iOS/WebViews)
+        await this.waitForVoices(2000)
 
-      // Ensure voices are loaded before picking one (best-effort)
-      void this.waitForVoices().then(() => {
+        const utterance = new SpeechSynthesisUtterance(text)
+        utterance.lang = SPEECH_LANG_MAP[language]
+        // Pick best voice for target language or fallback to default voice
         const voice = this.getVoiceForLanguage(language)
-        if (voice) {
-          utterance.voice = voice
-        }
-      })
+        if (voice) utterance.voice = voice
 
-      utterance.rate = 0.9
-      utterance.pitch = 1
-      utterance.volume = 1
+        utterance.rate = 0.9
+        utterance.pitch = 1
+        utterance.volume = 1
 
-      // iOS / some WebViews may pause the queue until user gesture; force resume periodically
-      try { this.synth.resume() } catch {}
-      if (this.resumeInterval) {
-        try { clearInterval(this.resumeInterval) } catch {}
-      }
-      this.resumeInterval = window.setInterval(() => {
+        // iOS / some WebViews may pause the queue until user gesture; force resume periodically
         try { this.synth?.resume() } catch {}
-      }, 200)
-
-      utterance.onend = () => {
         if (this.resumeInterval) {
-          clearInterval(this.resumeInterval)
-          this.resumeInterval = null
+          try { clearInterval(this.resumeInterval) } catch {}
         }
-        resolve()
-      }
-      utterance.onerror = () => {
-        if (this.resumeInterval) {
-          clearInterval(this.resumeInterval)
-          this.resumeInterval = null
+        this.resumeInterval = window.setInterval(() => {
+          try { this.synth?.resume() } catch {}
+        }, 200)
+
+        utterance.onend = () => {
+          if (this.resumeInterval) {
+            clearInterval(this.resumeInterval)
+            this.resumeInterval = null
+          }
+          resolve()
         }
-        reject(new Error('speech_failed'))
+        utterance.onerror = () => {
+          if (this.resumeInterval) {
+            clearInterval(this.resumeInterval)
+            this.resumeInterval = null
+          }
+          reject(new Error('speech_failed'))
+        }
+
+        this.synth?.speak(utterance)
       }
 
-      this.synth.speak(utterance)
+      void run()
     })
   }
 
