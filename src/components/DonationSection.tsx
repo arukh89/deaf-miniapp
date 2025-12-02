@@ -84,6 +84,17 @@ export function DonationSection({ userFid }: DonationSectionProps) {
     const sdeafsToken = DONATION_TOKENS.find((t) => t.symbol === 'sDEAFs' && t.address)
     const isErc20 = token !== 'ETH'
     const selectedErc20 = token === 'USDC' ? usdcToken : token === 'sDEAFs' ? sdeafsToken : null
+    // Guard missing token config to avoid falling back to native transfers
+    if (token === 'USDC' && !usdcToken?.address) {
+      setIsProcessing(false)
+      setError('USDC is not configured on Base. Please set NEXT_PUBLIC_USDC_ADDRESS and reload the app.')
+      return
+    }
+    if (token === 'sDEAFs' && !sdeafsToken?.address) {
+      setIsProcessing(false)
+      setError('sDEAFs token is not configured. Please set NEXT_PUBLIC_SDEAFS_ADDRESS and reload the app.')
+      return
+    }
     // decimals: ETH=18, USDC=6, sDEAFs=read on-chain (fallback ke constants)
     const decimals =
       token === 'ETH'

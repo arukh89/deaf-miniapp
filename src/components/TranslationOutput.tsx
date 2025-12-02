@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Volume2, VolumeX, Copy, Check } from 'lucide-react'
@@ -8,6 +8,7 @@ import type { Language } from '@/types'
 import { speechService } from '@/lib/speech'
 import { ErrorMessage } from './ErrorMessage'
 import { feedbackService } from '@/lib/feedbackService'
+import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 
 interface TranslationOutputProps {
   text: string
@@ -18,12 +19,22 @@ export function TranslationOutput({ text, language }: TranslationOutputProps) {
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false)
   const [copied, setCopied] = useState<boolean>(false)
   const [speechError, setSpeechError] = useState<string>('')
+  const isMiniApp = useIsInFarcaster()
+  const ttsAvailable = useMemo(() => {
+    if (typeof window === 'undefined') return false
+    return 'speechSynthesis' in window
+  }, [])
+  const disableTTS = isMiniApp // per requirement: disable inside Mini App
 
   const handleSpeak = async (): Promise<void> => {
     if (!text) return
 
     try {
       setSpeechError('')
+      if (disableTTS) {
+        setSpeechError('tts_not_supported_miniapp')
+        return
+      }
       setIsSpeaking(true)
       
       // Haptic feedback when starting speech
@@ -91,7 +102,9 @@ export function TranslationOutput({ text, language }: TranslationOutputProps) {
                   onClick={isSpeaking ? handleStopSpeech : handleSpeak}
                   variant={isSpeaking ? 'destructive' : 'default'}
                   size="sm"
+                  disabled={disableTTS || !ttsAvailable}
                   className={isSpeaking ? 'gap-2' : 'gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-xl shadow-blue-500/50 border-0'}
+                  title={disableTTS ? 'Text-to-speech is not supported inside the Farcaster Mini App.' : undefined}
                 >
                   {isSpeaking ? (
                     <>
@@ -111,12 +124,20 @@ export function TranslationOutput({ text, language }: TranslationOutputProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {disableTTS && text && (
+          <ErrorMessage
+            type="speech"
+            message="Text-to-speech is not supported inside the Farcaster Mini App. Please open in your browser to use voice."
+          />
+        )}
         {speechError && (
           <ErrorMessage
             type="speech"
             message={
               speechError === 'speech_not_supported'
                 ? "Your browser doesn't support text-to-speech. Please try Chrome or Safari."
+                : speechError === 'tts_not_supported_miniapp'
+                ? 'Text-to-speech is not supported inside the Farcaster Mini App. Please open in your browser to use voice.'
                 : "Unable to play voice output. Please check your device volume and try again."
             }
             onRetry={() => {

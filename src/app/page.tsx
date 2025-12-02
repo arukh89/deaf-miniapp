@@ -24,6 +24,7 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('en')
   const [translatedText, setTranslatedText] = useState<string>('')
+  const [lastPhraseKey, setLastPhraseKey] = useState<string | null>(null)
   const [capturedImage, setCapturedImage] = useState<string>('')
     const { addMiniApp } = useAddMiniApp();
     const isInFarcaster = useIsInFarcaster()
@@ -64,6 +65,7 @@ export default function Page() {
     if (translations) {
       const translated = translations[selectedLanguage] || translations.en
       setTranslatedText(translated)
+      setLastPhraseKey(phraseKey)
     }
   }
 
@@ -80,12 +82,14 @@ export default function Page() {
           GESTURE_PHRASES[key as keyof typeof GESTURE_PHRASES][selectedLanguage] ||
           GESTURE_PHRASES[key as keyof typeof GESTURE_PHRASES].en
         setTranslatedText(translated)
+        setLastPhraseKey(key)
         return
       }
     }
     
     // If no match, show the input text (would be translated in Pro version)
     setTranslatedText(text)
+    setLastPhraseKey(null)
   }
 
   const handleImageCapture = (imageUrl: string, gesture?: string, confidence?: number): void => {
@@ -101,14 +105,17 @@ export default function Page() {
         const translated = translations[selectedLanguage] || translations.en
         console.log('✅ Translation found:', translated)
         setTranslatedText(translated)
+        setLastPhraseKey(gesture)
       } else {
         console.log('❌ No translation found for:', gesture)
         setTranslatedText('Gesture not in translation database. Please select manually.')
+        setLastPhraseKey(null)
       }
     } else {
       // No gesture detected, prompt user to select manually
       console.log('❌ No clear gesture detected')
       setTranslatedText('Gesture not detected clearly. Please select from the phrases below or retake photo.')
+      setLastPhraseKey(null)
     }
   }
 
@@ -118,16 +125,28 @@ export default function Page() {
     if (phraseKey.startsWith('letter_')) {
       const letter = phraseKey.split('_')[1]?.toUpperCase() || ''
       setTranslatedText(letter)
+      setLastPhraseKey(null)
       return
     }
     const translations = GESTURE_PHRASES[phraseKey as keyof typeof GESTURE_PHRASES]
     if (translations) {
       const translated = translations[selectedLanguage] || translations.en
       setTranslatedText(translated)
+      setLastPhraseKey(phraseKey)
     } else {
       setTranslatedText('Translation not available for this gesture.')
+      setLastPhraseKey(null)
     }
   }
+
+  // Auto re-translate when output language changes for the last selected phrase
+  useEffect(() => {
+    if (!lastPhraseKey) return
+    const translations = GESTURE_PHRASES[lastPhraseKey as keyof typeof GESTURE_PHRASES]
+    if (!translations) return
+    const translated = translations[selectedLanguage] || translations.en
+    setTranslatedText(translated)
+  }, [selectedLanguage, lastPhraseKey])
 
   if (isLoading) {
     return (
