@@ -77,11 +77,11 @@ export async function getBaseAppProvider(): Promise<EIP1193Provider | null> {
   return null
 }
 
-// Try Base App first, then Farcaster Warplet, then generic injections
+// Prefer Farcaster Warplet first, then Base App
 export async function getAnyInjectedProvider(): Promise<EIP1193Provider | null> {
-  const baseP = await getBaseAppProvider()
-  if (baseP) return baseP
-  return getMiniAppProvider()
+  const mini = await getMiniAppProvider()
+  if (mini) return mini
+  return getBaseAppProvider()
 }
 
 export async function ensureBaseChain(provider: EIP1193Provider): Promise<void> {
