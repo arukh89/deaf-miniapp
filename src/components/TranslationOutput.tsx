@@ -163,7 +163,7 @@ export function TranslationOutput({ text, language }: TranslationOutputProps) {
 
         {text && (
           <p className="text-xs text-center text-blue-300">
-            Click "Speak" to hear the translation in the selected language
+            Click &quot;Speak&quot; to hear the translation in the selected language
           </p>
         )}
       </CardContent>

@@ -235,7 +235,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
           {showSuccess && (
             <SuccessMessage
               title="🎉 Thank You for Your Generosity!"
-              message="Your contribution is making a real difference! You'll see regular updates on how your donation is being used to support the deaf community."
+              message={"Your contribution is making a real difference! You&rsquo;ll see regular updates on how your donation is being used to support the deaf community."}
             />
           )}
 
@@ -484,7 +484,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
           <p className="text-sm text-purple-700 leading-relaxed max-w-2xl mx-auto">
             Every contribution, no matter the size, creates a ripple effect of positive change. 
             Your support helps us build better accessibility tools and directly empowers the deaf community. 
-            Together, we're making the world more inclusive for everyone. 💜
+            Together, we&rsquo;re making the world more inclusive for everyone. 💜
           </p>
           <div className="flex justify-center gap-2 pt-2">
             <Badge className="bg-purple-100 text-purple-800 border-purple-300">
