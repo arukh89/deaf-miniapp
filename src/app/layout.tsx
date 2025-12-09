@@ -9,17 +9,17 @@ import FarcasterWrapper from "@/components/FarcasterWrapper";
 import { cookies } from "next/headers";
 import { WagmiProviders } from "@/providers/WagmiProviders";
 
-const APP_URL = "https://deaf-miniapp.vercel.app/";
-const TILE_IMAGE_URL =
-  "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_e6a8c594-ad66-4fdd-9511-d14d4581c9e1-hlhHK1O5jC2ojzAgKAM7OMvaVgwQdp";
-const SPLASH_IMAGE_URL = APP_URL + "splash.png";
+const APP_URL = "https://deaf-miniapp.vercel.app";
+const TILE_IMAGE_URL = APP_URL + "/preview.png";
+const SPLASH_IMAGE_URL = APP_URL + "/splash.png";
+const OG_IMAGE_URL = APP_URL + "/thumbnail.png";
 
 // Follow Farcaster mini-app meta spec exactly
 const frame = {
   version: "1" as const,
   imageUrl: TILE_IMAGE_URL,
   button: {
-    title: "Launch Gesture Translator",
+    title: "Open Deaf Helper",
     action: {
       type: "launch_frame" as const,
       name: "Gesture Translator",
@@ -41,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: TILE_IMAGE_URL,
+          url: OG_IMAGE_URL,
           width: 1200,
           height: 630,
           alt: "Gesture Translator",
@@ -52,7 +52,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title: "Gesture Translator",
       description: `Convert gestures to text/audio in multiple languages for the hearing-impaired. Support us via USDC/ETH donations directly through the app. UID: farcaster ${CREATOR_USERNAME}.`,
-      images: [TILE_IMAGE_URL],
+      images: [OG_IMAGE_URL],
     },
     other: {
       "fc:miniapp": JSON.stringify(frame),
