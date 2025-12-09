@@ -19,7 +19,7 @@ const frame = {
   version: "1" as const,
   imageUrl: TILE_IMAGE_URL,
   button: {
-    title: "Open Deaf Helper",
+    title: "Gesture Translator",
     action: {
       type: "launch_frame" as const,
       name: "Gesture Translator",
@@ -32,10 +32,12 @@ const frame = {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
+    applicationName: "Gesture Translator",
     title: "Gesture Translator",
     description: `Convert gestures to text/audio in multiple languages for the hearing-impaired. Support us via USDC/ETH donations directly through the app. UID: farcaster ${CREATOR_USERNAME}.`,
     openGraph: {
       title: "Gesture Translator",
+      siteName: "deaf-miniapp.vercel.app",
       description: `Convert gestures to text/audio in multiple languages for the hearing-impaired. Support us via USDC/ETH donations directly through the app. UID: farcaster ${CREATOR_USERNAME}.`,
       url: APP_URL,
       type: "website",
