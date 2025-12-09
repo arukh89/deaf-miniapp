@@ -56,6 +56,13 @@ export async function getMiniAppWalletClient() {
 // Discover Base App in-app wallet provider via Base Account SDK (when hosted inside Base App)
 export async function getBaseAppProvider(): Promise<EIP1193Provider | null> {
   if (typeof window === "undefined") return null
+  // Gate: only enable Base App provider when explicitly hosted with ?host=base
+  try {
+    const qp = new URLSearchParams(window.location.search)
+    if (qp.get('host') !== 'base') return null
+  } catch {
+    return null
+  }
   try {
     // Lazy import to avoid SSR issues and reduce bundle impact
     const mod: any = await import("@base-org/account")
@@ -77,11 +84,11 @@ export async function getBaseAppProvider(): Promise<EIP1193Provider | null> {
   return null
 }
 
-// Try Base App first, then Farcaster Warplet, then generic injections
+// Prefer Farcaster Warplet first, then Base App
 export async function getAnyInjectedProvider(): Promise<EIP1193Provider | null> {
-  const baseP = await getBaseAppProvider()
-  if (baseP) return baseP
-  return getMiniAppProvider()
+  const mini = await getMiniAppProvider()
+  if (mini) return mini
+  return getBaseAppProvider()
 }
 
 export async function ensureBaseChain(provider: EIP1193Provider): Promise<void> {

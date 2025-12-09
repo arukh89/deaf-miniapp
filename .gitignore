@@ -36,3 +36,7 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma (not used)
+#
+
+# MediaPipe self-hosted assets (copied at build time)
+public/mediapipe/
