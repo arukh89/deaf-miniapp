@@ -184,6 +184,21 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
     try {
       setError('')
       
+      // In Farcaster Mini App, request permissions via host first
+      if (isMiniApp) {
+        try {
+          const { sdk } = await import('@farcaster/miniapp-sdk')
+          // Only request if action exists
+          if (sdk?.actions?.requestCameraAndMicrophoneAccess) {
+            await sdk.actions.requestCameraAndMicrophoneAccess()
+          }
+        } catch (e) {
+          // If user denies or host not supporting, surface permission error
+          setError('permission_denied')
+          return
+        }
+      }
+      
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setError('camera_not_supported')
         return

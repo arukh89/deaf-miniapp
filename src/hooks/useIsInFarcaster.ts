@@ -6,16 +6,19 @@ export function useIsInFarcaster(): boolean {
   const [isInFarcaster, setIsInFarcaster] = useState(false)
 
   useEffect(() => {
-    // Check if we're running in a Farcaster environment
-    const checkFarcasterEnvironment = () => {
-      // Check for Farcaster-specific window objects or URL patterns
-      const isFarcaster = window.location.href.includes('farcaster') ||
-                        !!(window as any).farcaster
-      
-      setIsInFarcaster(isFarcaster)
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { sdk } = await import('@farcaster/miniapp-sdk')
+        const inMiniApp = await sdk.isInMiniApp().catch(() => false)
+        if (!cancelled) setIsInFarcaster(!!inMiniApp)
+      } catch {
+        if (!cancelled) setIsInFarcaster(false)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
-
-    checkFarcasterEnvironment()
   }, [])
 
   return isInFarcaster

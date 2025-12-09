@@ -31,6 +31,18 @@ export function GestureCamera({ onCapture, isProcessing = false }: GestureCamera
   const startCamera = async (): Promise<void> => {
     try {
       setError('')
+      // When in Farcaster Mini App, request host permissions first
+      if (isMiniApp) {
+        try {
+          const { sdk } = await import('@farcaster/miniapp-sdk')
+          if (sdk?.actions?.requestCameraAndMicrophoneAccess) {
+            await sdk.actions.requestCameraAndMicrophoneAccess()
+          }
+        } catch {
+          setError('permission_denied')
+          return
+        }
+      }
       
       // Check if getUserMedia is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
