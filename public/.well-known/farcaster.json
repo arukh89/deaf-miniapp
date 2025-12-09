@@ -8,6 +8,13 @@
     "buttonTitle": "Open Deaf Helper",
     "splashImageUrl": "https://deaf-miniapp.vercel.app/splash.png",
     "splashBackgroundColor": "#ffffff",
+    "requiredChains": ["eip155:8453"],
+    "requiredCapabilities": [
+      "wallet.getEthereumProvider",
+      "actions.requestCameraAndMicrophoneAccess",
+      "actions.sendToken",
+      "actions.openUrl"
+    ],
     "tags": ["accessibility", "sign-language", "farcaster"],
     "primaryCategory": "entertainment",
     "ogTitle": "Gesture Translator",
