@@ -2,19 +2,20 @@
 
 import { erc20Abi, parseEther, parseUnits, createPublicClient, custom } from "viem"
 import { base } from "viem/chains"
-import { getMiniAppProvider, getMiniAppWalletClient, ensureBaseChain, getPrimaryAccount } from "./miniappProvider"
+import { getMiniAppProvider, getMiniAppWalletClient, ensureBaseChain, getPrimaryAccount, getBaseAppProvider, getAnyInjectedProvider } from "./miniappProvider"
 
 type Hex = `0x${string}`
 
-export async function getErc20Decimals(token: Hex): Promise<number> {
-  const provider = await getMiniAppProvider()
+export async function getErc20Decimals(token: string): Promise<number> {
+  // Try any available injected provider (Base App, Warplet, etc.)
+  const provider = await getAnyInjectedProvider()
   if (!provider) throw new Error('no_provider')
   const pc = createPublicClient({ chain: base, transport: custom(provider) })
-  const dec = await pc.readContract({ address: token, abi: erc20Abi, functionName: 'decimals' })
+  const dec = await pc.readContract({ address: token as Hex, abi: erc20Abi, functionName: 'decimals' })
   return Number(dec)
 }
 
-export async function sendEthViaMiniApp(params: { to: Hex; amountEth: string }) {
+export async function sendEthViaMiniApp(params: { to: string; amountEth: string }) {
   const provider = await getMiniAppProvider()
   if (!provider) throw new Error("no_provider")
   const client = await getMiniAppWalletClient()
@@ -42,12 +43,12 @@ export async function sendEthViaMiniApp(params: { to: Hex; amountEth: string }) 
 
   return client.sendTransaction({
     account,
-    to: params.to,
+    to: params.to as Hex,
     value: parseEther(params.amountEth),
   })
 }
 
-export async function sendErc20ViaMiniApp(params: { token: Hex; to: Hex; amount: string; decimals: number }) {
+export async function sendErc20ViaMiniApp(params: { contract: string; to: string; amount: string; decimals: number }) {
   const provider = await getMiniAppProvider()
   if (!provider) throw new Error("no_provider")
   const client = await getMiniAppWalletClient()
@@ -60,7 +61,7 @@ export async function sendErc20ViaMiniApp(params: { token: Hex; to: Hex; amount:
   try {
     const pc = createPublicClient({ chain: base, transport: custom(provider) })
     const [tokenBal, gasPrice] = await Promise.all([
-      pc.readContract({ address: params.token, abi: erc20Abi, functionName: "balanceOf", args: [account] }),
+      pc.readContract({ address: params.contract as Hex, abi: erc20Abi, functionName: "balanceOf", args: [account] }),
       pc.getGasPrice(),
     ])
     const amount = parseUnits(params.amount, params.decimals)
@@ -78,10 +79,50 @@ export async function sendErc20ViaMiniApp(params: { token: Hex; to: Hex; amount:
   }
 
   return client.writeContract({
-    address: params.token,
+    address: params.contract as Hex,
     abi: erc20Abi,
     functionName: "transfer",
-    args: [params.to, parseUnits(params.amount, params.decimals)],
+    args: [params.to as Hex, parseUnits(params.amount, params.decimals)],
     account,
+  })
+}
+
+// Base App path using Base Account SDK provider
+export async function sendEthViaBaseApp(params: { to: string; amountEth: string }) {
+  const provider = await getBaseAppProvider()
+  if (!provider) throw new Error("no_provider")
+
+  await ensureBaseChain(provider)
+
+  // Use low-level request to avoid relying on viem WalletClient when unavailable
+  // but we still try to get account via helper
+  const client = createPublicClient({ chain: base, transport: custom(provider) }) as any
+  const from = await getPrimaryAccount(provider, client)
+  return (provider as any).request?.({
+    method: "eth_sendTransaction",
+    params: [{ from, to: params.to, value: parseEther(params.amountEth).toString() }] as any,
+  })
+}
+
+export async function sendErc20ViaBaseApp(params: { contract: string; to: string; amount: string; decimals: number }) {
+  const provider = await getBaseAppProvider()
+  if (!provider) throw new Error("no_provider")
+
+  await ensureBaseChain(provider)
+
+  const client = createPublicClient({ chain: base, transport: custom(provider) })
+  const from = await getPrimaryAccount(provider, client as any)
+
+  // Encode ERC20 transfer data manually via viem
+  const amount = parseUnits(params.amount, params.decimals)
+  const data = (await import("viem")).encodeFunctionData({
+    abi: erc20Abi,
+    functionName: "transfer",
+    args: [params.to as Hex, amount],
+  })
+
+  return (provider as any).request?.({
+    method: "eth_sendTransaction",
+    params: [{ from, to: params.contract, data }] as any,
   })
 }
