@@ -53,6 +53,37 @@ export async function getMiniAppWalletClient() {
   return createWalletClient({ chain: base, transport: custom(provider) })
 }
 
+// Discover Base App in-app wallet provider via Base Account SDK (when hosted inside Base App)
+export async function getBaseAppProvider(): Promise<EIP1193Provider | null> {
+  if (typeof window === "undefined") return null
+  try {
+    // Lazy import to avoid SSR issues and reduce bundle impact
+    const mod: any = await import("@base-org/account")
+    const createBaseAccountSDK = mod?.createBaseAccountSDK
+    const baseConst = mod?.base
+    if (!createBaseAccountSDK) return null
+    const sdk = createBaseAccountSDK({
+      appName: "Gesture Translator",
+      appLogoUrl: "https://deaf-miniapp.vercel.app/icon.png",
+      appChainIds: baseConst?.constants?.CHAIN_IDS?.base
+        ? [baseConst.constants.CHAIN_IDS.base]
+        : [8453],
+    })
+    const provider = sdk?.getProvider?.()
+    if (provider && (provider as any).request) return provider as EIP1193Provider
+  } catch {
+    // ignore
+  }
+  return null
+}
+
+// Try Base App first, then Farcaster Warplet, then generic injections
+export async function getAnyInjectedProvider(): Promise<EIP1193Provider | null> {
+  const baseP = await getBaseAppProvider()
+  if (baseP) return baseP
+  return getMiniAppProvider()
+}
+
 export async function ensureBaseChain(provider: EIP1193Provider): Promise<void> {
   // Base mainnet = 8453 = 0x2105
   try {

@@ -11,7 +11,8 @@ import { CREATOR_WALLET, CREATOR_USERNAME, CREATOR_FID, DONATION_TOKENS, BASE_CH
 import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 import { SuccessMessage } from './SuccessMessage'
 import { ErrorMessage } from './ErrorMessage'
-import { sendEthViaMiniApp, sendErc20ViaMiniApp, getErc20Decimals } from '@/lib/tokenSender'
+import { sendEthViaMiniApp, sendErc20ViaMiniApp, getErc20Decimals, sendEthViaBaseApp, sendErc20ViaBaseApp } from '@/lib/tokenSender'
+import { getBaseAppProvider } from '@/lib/miniappProvider'
 import { parseUnits, InsufficientFundsError } from 'viem'
 import { estimateSdeafsForUsd } from '@/lib/mintclubPricing'
 
@@ -102,7 +103,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
         : token === 'USDC'
         ? 6
         : sdeafsToken?.address
-        ? await getErc20Decimals(sdeafsToken.address as `0x${string}`).catch(() => sdeafsToken?.decimals ?? 18)
+        ? await getErc20Decimals(sdeafsToken.address).catch(() => sdeafsToken?.decimals ?? 18)
         : 18
 
     // deeplink token param
@@ -134,18 +135,41 @@ export function DonationSection({ userFid }: DonationSectionProps) {
     const warpcastUrl = `https://warpcast.com/~/send?${params.toString()}`
 
     try {
-      // Use viem + Mini App injected provider (Warplet) → native overlay sheet
+      // 1) Base App in-app wallet path
+      try {
+        const baseProvider = await getBaseAppProvider()
+        if (baseProvider) {
+          if (token === 'ETH') {
+            await sendEthViaBaseApp({ to: CREATOR_WALLET, amountEth: amount })
+          } else {
+            if (!selectedErc20?.address) throw new Error('Token address unavailable')
+            await sendErc20ViaBaseApp({
+              contract: selectedErc20.address,
+              to: CREATOR_WALLET,
+              amount: amountToken,
+              decimals,
+            })
+          }
+          setShowSuccess(true)
+          setTimeout(() => setShowSuccess(false), 10000)
+          return
+        }
+      } catch (e) {
+        // ignore and try Farcaster path next
+      }
+
+      // 2) Farcaster Mini App (Warplet) path
       try {
         const { sdk } = await import('@farcaster/miniapp-sdk')
         const inMiniApp = await sdk.isInMiniApp().catch(() => false)
         if (inMiniApp) {
           if (token === 'ETH') {
-            await sendEthViaMiniApp({ to: CREATOR_WALLET as `0x${string}`, amountEth: amount })
+            await sendEthViaMiniApp({ to: CREATOR_WALLET, amountEth: amount })
           } else {
             if (!selectedErc20?.address) throw new Error('Token address unavailable')
             await sendErc20ViaMiniApp({
-              token: selectedErc20.address as `0x${string}`,
-              to: CREATOR_WALLET as `0x${string}`,
+              contract: selectedErc20.address,
+              to: CREATOR_WALLET,
               amount: amountToken,
               decimals,
             })
@@ -158,13 +182,13 @@ export function DonationSection({ userFid }: DonationSectionProps) {
         const err = e as any
         // viem throws InsufficientFundsError or our pre-check throws "insufficient_balance"
         if (err?.message === 'insufficient_balance' || err instanceof InsufficientFundsError) {
-          setError('Insufficient balance in your Warplet wallet.')
+          setError('Insufficient balance in your wallet.')
           return
         }
-        console.error('miniapp viem send failed, falling back to openUrl', e)
+        console.error('miniapp/base viem send failed, falling back to openUrl', e)
       }
 
-      // Fallbacks: open Warpcast deeplink to Warplet (web/desktop)
+      // 3) Fallbacks: open Warpcast deep link (web/desktop)
       try {
         const { sdk } = await import('@farcaster/miniapp-sdk')
         await sdk.actions.openUrl(warpcastUrl)
@@ -172,7 +196,6 @@ export function DonationSection({ userFid }: DonationSectionProps) {
         window.open(warpcastUrl, isInFarcaster ? '_top' : '_blank')
       }
 
-      // Show success message
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 10000)
       
@@ -450,7 +473,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
             {isProcessing ? (
               <>
                 <Loader2 className="w-6 h-6 mr-2 animate-spin" />
-                Opening Warplet...
+                Opening wallet...
               </>
             ) : (
               <>
@@ -458,7 +481,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
                 {token === 'sDEAFs'
                   ? (amount ? `Donate $${amount} → ≈ ${sdeafsEstimate ?? '…'} sDEAFs` : 'Donate')
                   : (amount ? `Donate ${amount} ${token}` : 'Donate')}
-                 via Warplet
+                 via Wallet
                 <ExternalLink className="w-5 h-5 ml-2" />
               </>
             )}

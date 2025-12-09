@@ -13,6 +13,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@base-org/account": "^2.5.0",
     "@coinbase/onchainkit": "^0.37.8",
     "@farcaster/miniapp-sdk": "0.2.1",
     "@farcaster/miniapp-wagmi-connector": "^1.1.0",
