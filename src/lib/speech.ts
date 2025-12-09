@@ -75,6 +75,25 @@ export class SpeechService {
     return voice || null
   }
 
+  // Warm up TTS on a user gesture (unblocks iOS/WebView policies)
+  async warmup(language: Language = 'en'): Promise<void> {
+    if (!this.synth) return
+    await this.waitForVoices(1500)
+    try {
+      const utter = new SpeechSynthesisUtterance('.')
+      utter.lang = SPEECH_LANG_MAP[language]
+      utter.volume = 0 // silent warmup
+      utter.rate = 1
+      utter.pitch = 1
+      // Best effort: start then cancel quickly
+      this.synth.resume()
+      this.synth.speak(utter)
+      setTimeout(() => {
+        try { this.synth?.cancel() } catch {}
+      }, 50)
+    } catch {}
+  }
+
   speak(text: string, language: Language): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.synth) return reject(new Error('speech_not_supported'))

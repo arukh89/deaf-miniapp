@@ -19,22 +19,19 @@ export function TranslationOutput({ text, language }: TranslationOutputProps) {
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false)
   const [copied, setCopied] = useState<boolean>(false)
   const [speechError, setSpeechError] = useState<string>('')
-  const isMiniApp = useIsInFarcaster()
   const ttsAvailable = useMemo(() => {
     if (typeof window === 'undefined') return false
     return 'speechSynthesis' in window
   }, [])
-  const disableTTS = isMiniApp // per requirement: disable inside Mini App
+  const disableTTS = !ttsAvailable
 
   const handleSpeak = async (): Promise<void> => {
     if (!text) return
 
     try {
       setSpeechError('')
-      if (disableTTS) {
-        setSpeechError('tts_not_supported_miniapp')
-        return
-      }
+      // Warm up on first use to satisfy iOS/WebView autoplay policies
+      await speechService.warmup(language)
       setIsSpeaking(true)
       
       // Haptic feedback when starting speech
@@ -102,9 +99,9 @@ export function TranslationOutput({ text, language }: TranslationOutputProps) {
                   onClick={isSpeaking ? handleStopSpeech : handleSpeak}
                   variant={isSpeaking ? 'destructive' : 'default'}
                   size="sm"
-                  disabled={disableTTS || !ttsAvailable}
+                  disabled={disableTTS}
                   className={isSpeaking ? 'gap-2' : 'gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-xl shadow-blue-500/50 border-0'}
-                  title={disableTTS ? 'Text-to-speech is not supported inside the Farcaster Mini App.' : undefined}
+                  title={disableTTS ? 'Text-to-speech is not supported in this browser.' : undefined}
                 >
                   {isSpeaking ? (
                     <>
@@ -127,7 +124,7 @@ export function TranslationOutput({ text, language }: TranslationOutputProps) {
         {disableTTS && text && (
           <ErrorMessage
             type="speech"
-            message="Text-to-speech is not supported inside the Farcaster Mini App. Please open in your browser to use voice."
+            message="Text-to-speech is not supported in this environment. Please try a modern browser like Safari or Chrome."
           />
         )}
         {speechError && (
@@ -137,7 +134,7 @@ export function TranslationOutput({ text, language }: TranslationOutputProps) {
               speechError === 'speech_not_supported'
                 ? "Your browser doesn't support text-to-speech. Please try Chrome or Safari."
                 : speechError === 'tts_not_supported_miniapp'
-                ? 'Text-to-speech is not supported inside the Farcaster Mini App. Please open in your browser to use voice.'
+                ? 'Text-to-speech is not supported in this environment. Please try a modern browser.'
                 : "Unable to play voice output. Please check your device volume and try again."
             }
             onRetry={() => {

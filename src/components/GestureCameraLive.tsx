@@ -10,6 +10,7 @@ import { analyzeHandGesture, getGesturePhrase } from '@/lib/gestureRecognition'
 import { Badge } from '@/components/ui/badge'
 import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 import { feedbackService } from '@/lib/feedbackService'
+import { speechService } from '@/lib/speech'
 
 interface GestureCameraLiveProps {
   onGestureDetected: (phraseKey: string, confidence: number) => void
@@ -188,15 +189,32 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         return
       }
 
+      // Use lower resolution on mobile WebViews for stability
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      const isAndroid = /Android/.test(navigator.userAgent)
+      const useMobileRes = isIOS || isAndroid
+
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },  // Higher resolution
+        video: useMobileRes
+          ? { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+          : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       })
 
       if (videoRef.current) {
+        // Ensure iOS inline playback
+        try {
+          videoRef.current.setAttribute('playsinline', 'true')
+          videoRef.current.setAttribute('webkit-playsinline', 'true')
+          videoRef.current.setAttribute('muted', 'true')
+        } catch {}
+
         videoRef.current.srcObject = mediaStream
         setStream(mediaStream)
         setIsStreaming(true)
+
+        // Explicitly start playback to satisfy some WebViews
+        try { await videoRef.current.play() } catch {}
 
         // Start MediaPipe camera
         if (handsRef.current) {
@@ -236,8 +254,8 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
                 sendingRef.current = false
               }
             },
-            width: 1280,  // Higher resolution
-            height: 720
+            width: useMobileRes ? 640 : 1280,
+            height: useMobileRes ? 480 : 720
           })
           cameraRef.current = camera
           camera.start()
@@ -412,7 +430,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
 
           <div className="flex gap-2 justify-center">
             {!isStreaming && !isLoading && (
-              <Button onClick={startCamera} size="lg" className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white shadow-xl shadow-emerald-500/50 border-0">
+              <Button onClick={async () => { try { await speechService.warmup('en') } catch {}; startCamera() }} size="lg" className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white shadow-xl shadow-emerald-500/50 border-0">
                 <Camera className="w-5 h-5 mr-2" />
                 Start Live Detection
               </Button>
