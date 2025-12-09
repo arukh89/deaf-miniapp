@@ -57,10 +57,16 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
     const loadMediaPipe = async (): Promise<void> => {
       try {
         setIsLoading(true)
-        // Load MediaPipe from CDN to avoid ESM interop issues
-        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js')
-        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js')
-        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js')
+        // Prefer self-hosted assets; fallback to CDN if unavailable
+        let assetBase = '/mediapipe/hands'
+        try {
+          await loadScript('/mediapipe/hands/hands.js')
+        } catch {
+          await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js')
+          assetBase = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915'
+        }
+        try { await loadScript('/mediapipe/drawing_utils/drawing_utils.js') } catch { await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js') }
+        try { await loadScript('/mediapipe/camera_utils/camera_utils.js') } catch { await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js') }
 
         const HandsCtor = (window as any).Hands
         const HAND_CONNECTIONS = (window as any).HAND_CONNECTIONS
@@ -68,9 +74,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         const drawLandmarks = (window as any).drawLandmarks
         
         const handsInstance = new HandsCtor({
-          locateFile: (file: string) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`
-          }
+          locateFile: (file: string) => `${assetBase}/${file}`
         })
 
         // IMPROVED SETTINGS for better sensitivity

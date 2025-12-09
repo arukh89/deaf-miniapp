@@ -7,7 +7,9 @@
   },
   "packageManager": "pnpm@10.19.0",
   "scripts": {
+    "predev": "node scripts/copy-mediapipe-assets.cjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-mediapipe-assets.cjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
