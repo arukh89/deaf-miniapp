@@ -300,7 +300,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         handsRef.current = null
       }
     }
-  }, [])
+  }, [stream])
 
   return (
     <Card className="w-full bg-gradient-to-br from-slate-900/60 to-emerald-900/60 backdrop-blur-xl border-emerald-500/30 shadow-2xl shadow-emerald-500/20">

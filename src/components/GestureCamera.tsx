@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Camera, Square, Loader2, Sparkles } from 'lucide-react'
@@ -63,13 +64,13 @@ export function GestureCamera({ onCapture, isProcessing = false }: GestureCamera
     }
   }
 
-  const stopCamera = (): void => {
+  const stopCamera = useCallback((): void => {
     if (stream) {
       stream.getTracks().forEach((track: MediaStreamTrack) => track.stop())
       setStream(null)
       setIsStreaming(false)
     }
-  }
+  }, [stream])
 
   const captureImage = async (): Promise<void> => {
     if (!videoRef.current || !canvasRef.current) return
@@ -137,7 +138,7 @@ export function GestureCamera({ onCapture, isProcessing = false }: GestureCamera
     return () => {
       stopCamera()
     }
-  }, [])
+  }, [stopCamera])
 
   return (
     <Card className="w-full bg-gradient-to-br from-slate-900/60 to-purple-900/60 backdrop-blur-xl border-purple-500/30 shadow-2xl shadow-purple-500/20">
@@ -146,9 +147,11 @@ export function GestureCamera({ onCapture, isProcessing = false }: GestureCamera
           <div className={`relative ${isMiniApp ? 'h-[62vh]' : 'h-[80vh] md:h-[70vh]'} bg-gradient-to-br from-slate-950 to-purple-950 rounded-lg overflow-hidden border-2 border-purple-500/30 shadow-2xl shadow-purple-500/20`}>
             {capturedImage ? (
               <div className="relative w-full h-full">
-                <img
+                <Image
                   src={capturedImage}
                   alt="Captured gesture"
+                  fill
+                  sizes="100vw"
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 

@@ -18,6 +18,7 @@ import { CREATOR_FID, CREATOR_USERNAME } from '@/lib/constants'
 import { useAddMiniApp } from "@/hooks/useAddMiniApp";
 import { useQuickAuth } from "@/hooks/useQuickAuth";
 import { useIsInFarcaster } from "@/hooks/useIsInFarcaster";
+import Image from 'next/image'
 
 export default function Page() {
   const [user, setUser] = useState<FarcasterUser | null>(null)
@@ -188,9 +189,11 @@ export default function Page() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   {user.pfpUrl ? (
-                    <img
+                    <Image
                       src={user.pfpUrl}
                       alt={user.displayName || user.username || 'User'}
+                      width={40}
+                      height={40}
                       className="w-10 h-10 rounded-full ring-2 ring-purple-400/50 shadow-lg"
                     />
                   ) : (
@@ -272,7 +275,7 @@ export default function Page() {
               <GestureCamera onCapture={handleImageCapture} />
               <div className="bg-slate-900/40 backdrop-blur-sm rounded-lg p-3 border border-purple-500/20">
                 <p className="text-xs text-purple-300 text-center">
-                  💡 Tip: If gesture isn't detected, you can manually select from phrases below
+                  💡 Tip: If gesture isn&apos;t detected, you can manually select from phrases below
                 </p>
               </div>
               <GesturePhrases onSelectPhrase={handlePhraseSelect} />
