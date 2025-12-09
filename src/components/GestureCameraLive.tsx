@@ -45,7 +45,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
   const [lastTriggerTime, setLastTriggerTime] = useState<number>(0)
   const detectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const cooldownUntilRef = useRef<number>(0)
-  const [isMirrored, setIsMirrored] = useState<boolean>(false)
+  const [isMirrored, setIsMirrored] = useState<boolean>(true)
   // Stability refs
   const cameraRef = useRef<any>(null)
   const handsRef = useRef<any>(null)

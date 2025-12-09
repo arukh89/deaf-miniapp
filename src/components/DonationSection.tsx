@@ -135,30 +135,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
     const warpcastUrl = `https://warpcast.com/~/send?${params.toString()}`
 
     try {
-      // 1) Base App in-app wallet path
-      try {
-        const baseProvider = await getBaseAppProvider()
-        if (baseProvider) {
-          if (token === 'ETH') {
-            await sendEthViaBaseApp({ to: CREATOR_WALLET, amountEth: amount })
-          } else {
-            if (!selectedErc20?.address) throw new Error('Token address unavailable')
-            await sendErc20ViaBaseApp({
-              contract: selectedErc20.address,
-              to: CREATOR_WALLET,
-              amount: amountToken,
-              decimals,
-            })
-          }
-          setShowSuccess(true)
-          setTimeout(() => setShowSuccess(false), 10000)
-          return
-        }
-      } catch (e) {
-        // ignore and try Farcaster path next
-      }
-
-      // 2) Farcaster Mini App (Warplet) path
+      // 1) Farcaster Mini App (Warplet) path — prefer Warplet when inside Warpcast
       try {
         const { sdk } = await import('@farcaster/miniapp-sdk')
         const inMiniApp = await sdk.isInMiniApp().catch(() => false)
@@ -185,7 +162,30 @@ export function DonationSection({ userFid }: DonationSectionProps) {
           setError('Insufficient balance in your wallet.')
           return
         }
-        console.error('miniapp/base viem send failed, falling back to openUrl', e)
+        // else ignore and try Base App path next
+      }
+
+      // 2) Base App in-app wallet path — when not inside Warpcast Mini App
+      try {
+        const baseProvider = await getBaseAppProvider()
+        if (baseProvider) {
+          if (token === 'ETH') {
+            await sendEthViaBaseApp({ to: CREATOR_WALLET, amountEth: amount })
+          } else {
+            if (!selectedErc20?.address) throw new Error('Token address unavailable')
+            await sendErc20ViaBaseApp({
+              contract: selectedErc20.address,
+              to: CREATOR_WALLET,
+              amount: amountToken,
+              decimals,
+            })
+          }
+          setShowSuccess(true)
+          setTimeout(() => setShowSuccess(false), 10000)
+          return
+        }
+      } catch (e) {
+        // ignore and continue to deep link fallback
       }
 
       // 3) Fallbacks: open Warpcast deep link (web/desktop)
