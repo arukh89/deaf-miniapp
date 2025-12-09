@@ -2,16 +2,16 @@
   "miniapp": {
     "version": "1",
     "name": "Gesture Translator",
-    "iconUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_e6a8c594-ad66-4fdd-9511-d14d4581c9e1-hlhHK1O5jC2ojzAgKAM7OMvaVgwQdp",
+    "iconUrl": "https://deaf-miniapp.vercel.app/icon.png",
     "homeUrl": "https://deaf-miniapp.vercel.app",
-    "imageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_e6a8c594-ad66-4fdd-9511-d14d4581c9e1-hlhHK1O5jC2ojzAgKAM7OMvaVgwQdp",
+    "imageUrl": "https://deaf-miniapp.vercel.app/preview.png",
     "buttonTitle": "Open Deaf Helper",
     "splashImageUrl": "https://deaf-miniapp.vercel.app/splash.png",
     "splashBackgroundColor": "#ffffff",
     "tags": ["accessibility", "sign-language", "farcaster"],
     "primaryCategory": "entertainment",
     "ogTitle": "Gesture Translator",
-    "ogImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_e6a8c594-ad66-4fdd-9511-d14d4581c9e1-hlhHK1O5jC2ojzAgKAM7OMvaVgwQdp"
+    "ogImageUrl": "https://deaf-miniapp.vercel.app/thumbnail.png"
   },
   "accountAssociation": {
     "header": "eyJmaWQiOjI1MDcwNCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDA5RDAyRDI1RDBEMDgyZjdGMkUwNGI0ODM4Y0VmZTI3MWIyZGFCMDkifQ",
@@ -24,3 +24,4 @@
     ]
   }
 }
+
