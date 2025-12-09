@@ -79,8 +79,8 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
           modelComplexity: 1,
           minDetectionConfidence: 0.3,  // LOWERED from 0.5 for better sensitivity
           minTrackingConfidence: 0.3,   // LOWERED from 0.5 for better sensitivity
-          // Use non-selfie; we will flip the processing canvas when preview is mirrored
-          selfieMode: false
+          // Let MediaPipe handle horizontal mirroring for front camera
+          selfieMode: true
         })
 
         handsInstance.onResults((results: Results) => {
@@ -135,28 +135,34 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
             }, 500)
           }
 
-          // Draw hand landmarks on canvas
-          if (canvasRef.current && results.multiHandLandmarks) {
-            const canvasCtx = canvasRef.current.getContext('2d')
-            if (canvasCtx) {
-              canvasCtx.save()
-              canvasCtx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
-              
-              // Draw landmarks
-              // Using globals from drawing_utils and hands
-              
-              for (const landmarks of results.multiHandLandmarks) {
-                drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
-                  color: '#00FF00',
-                  lineWidth: 3  // Increased from 2 for better visibility
-                })
-                drawLandmarks(canvasCtx, landmarks, {
-                  color: '#FF0000',
-                  lineWidth: 2,  // Increased from 1
-                  radius: 4      // Increased from 3
-                })
+          // Draw hand landmarks on overlay canvas sized to match source
+          if (canvasRef.current) {
+            const srcW = (results as any).image?.width || videoRef.current?.videoWidth || 0
+            const srcH = (results as any).image?.height || videoRef.current?.videoHeight || 0
+            if (srcW && srcH) {
+              if (canvasRef.current.width !== srcW || canvasRef.current.height !== srcH) {
+                canvasRef.current.width = srcW
+                canvasRef.current.height = srcH
               }
-              canvasCtx.restore()
+              const canvasCtx = canvasRef.current.getContext('2d')
+              if (canvasCtx) {
+                canvasCtx.save()
+                canvasCtx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+                if (results.multiHandLandmarks) {
+                  for (const landmarks of results.multiHandLandmarks) {
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
+                      color: '#00FF00',
+                      lineWidth: 3
+                    })
+                    drawLandmarks(canvasCtx, landmarks, {
+                      color: '#FF0000',
+                      lineWidth: 2,
+                      radius: 4
+                    })
+                  }
+                }
+                canvasCtx.restore()
+              }
             }
           }
         })
@@ -222,6 +228,9 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
           videoRef.current.setAttribute('playsinline', 'true')
           videoRef.current.setAttribute('webkit-playsinline', 'true')
           videoRef.current.setAttribute('muted', 'true')
+          // Also set properties for reliability on iOS
+          ;(videoRef.current as any).playsInline = true
+          videoRef.current.muted = true
         } catch {}
 
         videoRef.current.srcObject = mediaStream
@@ -231,49 +240,49 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         // Explicitly start playback to satisfy some WebViews
         try { await videoRef.current.play() } catch {}
 
-        // Start MediaPipe camera
-        if (handsRef.current) {
+        // Start MediaPipe processing loop
+        if (handsRef.current && videoRef.current) {
           const CameraCtor = (window as any).Camera
-          const camera = new CameraCtor(videoRef.current, {
-            onFrame: async () => {
-              const video = videoRef.current
-              const work = processCanvasRef.current
-              if (disposedRef.current) return
-              if (!video || !work || !handsRef.current) return
-              if (video.videoWidth === 0 || video.videoHeight === 0) return
-
-              if (work.width !== video.videoWidth || work.height !== video.videoHeight) {
-                work.width = video.videoWidth
-                work.height = video.videoHeight
+          if (CameraCtor) {
+            const camera = new CameraCtor(videoRef.current, {
+              onFrame: async () => {
+                if (disposedRef.current || !handsRef.current) return
+                if (videoRef.current?.videoWidth === 0 || videoRef.current?.videoHeight === 0) return
+                if (sendingRef.current) return
+                sendingRef.current = true
+                try {
+                  await handsRef.current.send({ image: videoRef.current! })
+                } catch (e) {
+                  console.debug('hands.send error', e)
+                } finally {
+                  sendingRef.current = false
+                }
+              },
+              width: useMobileRes ? 640 : 1280,
+              height: useMobileRes ? 480 : 720
+            })
+            cameraRef.current = camera
+            camera.start()
+          } else {
+            // Fallback RAF loop if camera_utils not available
+            const loop = async () => {
+              if (disposedRef.current || !handsRef.current) return
+              if (!videoRef.current) return
+              if (videoRef.current.videoWidth === 0 || videoRef.current.videoHeight === 0) return requestAnimationFrame(loop)
+              if (!sendingRef.current) {
+                sendingRef.current = true
+                try {
+                  await handsRef.current.send({ image: videoRef.current })
+                } catch (e) {
+                  console.debug('hands.send error', e)
+                } finally {
+                  sendingRef.current = false
+                }
               }
-
-              const ctx = work.getContext('2d')
-              if (!ctx) return
-              // Draw frame. If preview is mirrored, also mirror the processing canvas
-              if (isMirrored) {
-                ctx.save()
-                ctx.scale(-1, 1)
-                ctx.drawImage(video, -work.width, 0, work.width, work.height)
-                ctx.restore()
-              } else {
-                ctx.drawImage(video, 0, 0, work.width, work.height)
-              }
-              if (sendingRef.current) return
-              sendingRef.current = true
-              try {
-                await handsRef.current.send({ image: work })
-              } catch (e) {
-                // swallow send errors when tearing down
-                // console.debug('hands.send error', e)
-              } finally {
-                sendingRef.current = false
-              }
-            },
-            width: useMobileRes ? 640 : 1280,
-            height: useMobileRes ? 480 : 720
-          })
-          cameraRef.current = camera
-          camera.start()
+              requestAnimationFrame(loop)
+            }
+            requestAnimationFrame(loop)
+          }
         }
       }
     } catch (err) {
