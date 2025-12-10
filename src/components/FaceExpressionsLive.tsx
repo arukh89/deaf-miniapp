@@ -224,6 +224,28 @@ export function FaceExpressionsLive({ active = false, onEvent }: Props) {
               )}
             </div>
           )}
+
+          {running && (
+            <div className="space-y-2">
+              <div className="text-sm text-center text-blue-300 backdrop-blur-sm bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
+                <p className="flex items-center justify-center gap-2">
+                  ⚡ <span>Express detection — smile, raise your eyebrows, or blink!</span>
+                </p>
+                <p className="mt-1 text-xs text-blue-400">More sensitive • Faster response • All processing on-device</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-slate-900/40 backdrop-blur-sm rounded-lg p-2 border border-blue-500/20">
+                  <p className="text-blue-300 font-medium">😊 Smile = Thank you</p>
+                </div>
+                <div className="bg-slate-900/40 backdrop-blur-sm rounded-lg p-2 border border-cyan-500/20">
+                  <p className="text-cyan-300 font-medium">👁️‍🗨️ Raise eyebrows = Please</p>
+                </div>
+                <div className="bg-slate-900/40 backdrop-blur-sm rounded-lg p-2 border border-purple-500/20">
+                  <p className="text-purple-300 font-medium">👀 Blink both eyes = Repeat</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
