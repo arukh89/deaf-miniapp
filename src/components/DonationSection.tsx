@@ -367,6 +367,36 @@ export function DonationSection({ userFid }: DonationSectionProps) {
             </div>
           </div>
 
+          {/* Main Donate Button - Sticky below amount for high visibility */}
+          <div className="sticky top-2 md:top-4 z-30">
+            <Button
+              onClick={handleDonate}
+              className="w-full h-16 text-lg font-bold bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600 shadow-2xl hover:shadow-3xl transition-all hover:scale-105 border-2 border-amber-400"
+              size="lg"
+              disabled={isProcessing || !amount}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+                  Opening wallet...
+                </>
+              ) : (
+                <>
+                  <Heart className="w-6 h-6 mr-2 fill-white animate-pulse" />
+                  {token === 'sDEAFs'
+                    ? (amount ? `Donate $${amount} → ≈ ${sdeafsEstimate ?? '…'} sDEAFs` : 'Donate')
+                    : (amount ? `Donate ${amount} ${token}` : 'Donate')}
+                   via Wallet
+                  <ExternalLink className="w-5 h-5 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
+
+          <p className="text-xs text-center text-amber-700 italic font-medium">
+            🌟 All donations processed on Base mainnet via Warplet. 100% transparency guaranteed.
+          </p>
+
           {/* Benefits Section - Premium Design */}
           <div className="p-5 bg-gradient-to-br from-white to-amber-50 rounded-xl border-2 border-amber-300 shadow-lg space-y-3">
             <p className="text-base font-bold text-amber-900 flex items-center gap-2">
@@ -462,34 +492,6 @@ export function DonationSection({ userFid }: DonationSectionProps) {
               </code>
             </div>
           </div>
-
-          {/* Main Donate Button - Ultra Premium */}
-          <Button
-            onClick={handleDonate}
-            className="w-full h-16 text-lg font-bold bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600 shadow-2xl hover:shadow-3xl transition-all hover:scale-105 border-2 border-amber-400"
-            size="lg"
-            disabled={isProcessing || !amount}
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="w-6 h-6 mr-2 animate-spin" />
-                Opening wallet...
-              </>
-            ) : (
-              <>
-                <Heart className="w-6 h-6 mr-2 fill-white animate-pulse" />
-                {token === 'sDEAFs'
-                  ? (amount ? `Donate $${amount} → ≈ ${sdeafsEstimate ?? '…'} sDEAFs` : 'Donate')
-                  : (amount ? `Donate ${amount} ${token}` : 'Donate')}
-                 via Wallet
-                <ExternalLink className="w-5 h-5 ml-2" />
-              </>
-            )}
-          </Button>
-
-          <p className="text-xs text-center text-amber-700 italic font-medium">
-            🌟 All donations processed on Base mainnet via Warplet. 100% transparency guaranteed.
-          </p>
         </CardContent>
       </Card>
 
