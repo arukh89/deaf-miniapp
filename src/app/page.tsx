@@ -28,6 +28,7 @@ export default function Page() {
   const [lastPhraseKey, setLastPhraseKey] = useState<string | null>(null)
   const [capturedImage, setCapturedImage] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'live'|'camera'|'manual'|'donate'>('live')
+  const [outputVersion, setOutputVersion] = useState<number>(0)
     const { addMiniApp } = useAddMiniApp();
     const isInFarcaster = useIsInFarcaster()
     useQuickAuth(isInFarcaster)
@@ -68,6 +69,7 @@ export default function Page() {
       const translated = translations[selectedLanguage] || translations.en
       setTranslatedText(translated)
       setLastPhraseKey(phraseKey)
+      setOutputVersion((v) => v + 1)
     }
   }
 
@@ -85,6 +87,7 @@ export default function Page() {
           GESTURE_PHRASES[key as keyof typeof GESTURE_PHRASES].en
         setTranslatedText(translated)
         setLastPhraseKey(key)
+        setOutputVersion((v) => v + 1)
         return
       }
     }
@@ -92,6 +95,7 @@ export default function Page() {
     // If no match, show the input text (would be translated in Pro version)
     setTranslatedText(text)
     setLastPhraseKey(null)
+    setOutputVersion((v) => v + 1)
   }
 
   const handleImageCapture = (imageUrl: string, gesture?: string, confidence?: number): void => {
@@ -108,16 +112,19 @@ export default function Page() {
         console.log('✅ Translation found:', translated)
         setTranslatedText(translated)
         setLastPhraseKey(gesture)
+        setOutputVersion((v) => v + 1)
       } else {
         console.log('❌ No translation found for:', gesture)
         setTranslatedText('Gesture not in translation database. Please select manually.')
         setLastPhraseKey(null)
+        setOutputVersion((v) => v + 1)
       }
     } else {
       // No gesture detected, prompt user to select manually
       console.log('❌ No clear gesture detected')
       setTranslatedText('Gesture not detected clearly. Please select from the phrases below or retake photo.')
       setLastPhraseKey(null)
+      setOutputVersion((v) => v + 1)
     }
   }
 
@@ -128,6 +135,7 @@ export default function Page() {
       const letter = phraseKey.split('_')[1]?.toUpperCase() || ''
       setTranslatedText(letter)
       setLastPhraseKey(null)
+      setOutputVersion((v) => v + 1)
       return
     }
     const translations = GESTURE_PHRASES[phraseKey as keyof typeof GESTURE_PHRASES]
@@ -135,9 +143,11 @@ export default function Page() {
       const translated = translations[selectedLanguage] || translations.en
       setTranslatedText(translated)
       setLastPhraseKey(phraseKey)
+      setOutputVersion((v) => v + 1)
     } else {
       setTranslatedText('Translation not available for this gesture.')
       setLastPhraseKey(null)
+      setOutputVersion((v) => v + 1)
     }
   }
 
@@ -148,6 +158,7 @@ export default function Page() {
     if (!translations) return
     const translated = translations[selectedLanguage] || translations.en
     setTranslatedText(translated)
+    setOutputVersion((v) => v + 1)
   }, [selectedLanguage, lastPhraseKey])
 
   if (isLoading) {
@@ -256,7 +267,7 @@ export default function Page() {
                 </p>
               </div>
               <GestureCameraLive active={activeTab === 'live'} onGestureDetected={handleGestureDetected} />
-              <TranslationOutput text={translatedText} language={selectedLanguage} />
+              <TranslationOutput key={`out-${outputVersion}-live`} text={translatedText} language={selectedLanguage} />
             </div>
           </TabsContent>
 
@@ -280,14 +291,14 @@ export default function Page() {
                 </p>
               </div>
               <GesturePhrases onSelectPhrase={handlePhraseSelect} />
-              <TranslationOutput text={translatedText} language={selectedLanguage} />
+              <TranslationOutput key={`out-${outputVersion}-camera`} text={translatedText} language={selectedLanguage} />
             </div>
           </TabsContent>
 
           <TabsContent value="manual" className="space-y-6">
             <ManualInput onSubmit={handleManualInput} />
             <GesturePhrases onSelectPhrase={handlePhraseSelect} />
-            <TranslationOutput text={translatedText} language={selectedLanguage} />
+            <TranslationOutput key={`out-${outputVersion}-manual`} text={translatedText} language={selectedLanguage} />
           </TabsContent>
 
           <TabsContent value="donate">
