@@ -4,6 +4,7 @@ import type { Language } from '@/types'
 import type { FarcasterUser } from '@/types'
 import { GestureCamera } from '@/components/GestureCamera'
 import { GestureCameraLive } from '@/components/GestureCameraLive'
+import { FaceExpressionsLive } from '@/components/FaceExpressionsLive'
 import { LanguageSelector } from '@/components/LanguageSelector'
 import { TranslationOutput } from '@/components/TranslationOutput'
 import { GesturePhrases } from '@/components/GesturePhrases'
@@ -12,7 +13,7 @@ import { ManualInput } from '@/components/ManualInput'
 import { UpgradePrompt } from '@/components/UpgradePrompt'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Hand, MessageSquare, Heart, User, Video } from 'lucide-react'
+import { Hand, MessageSquare, Heart, User, Video, Smile } from 'lucide-react'
 import { GESTURE_PHRASES } from '@/lib/constants'
 import { CREATOR_FID, CREATOR_USERNAME } from '@/lib/constants'
 import { useAddMiniApp } from "@/hooks/useAddMiniApp";
@@ -27,7 +28,7 @@ export default function Page() {
   const [translatedText, setTranslatedText] = useState<string>('')
   const [lastPhraseKey, setLastPhraseKey] = useState<string | null>(null)
   const [capturedImage, setCapturedImage] = useState<string>('')
-  const [activeTab, setActiveTab] = useState<'live'|'camera'|'manual'|'donate'>('live')
+  const [activeTab, setActiveTab] = useState<'live'|'camera'|'face'|'manual'|'donate'>('live')
   const [outputVersion, setOutputVersion] = useState<number>(0)
   useEffect(() => {
     console.log('[UI] translatedText changed =>', translatedText, 'ver=', outputVersion, 'tab=', activeTab)
@@ -237,20 +238,24 @@ export default function Page() {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto bg-gradient-to-r from-slate-900/80 to-purple-900/80 backdrop-blur-xl border border-purple-500/30 shadow-2xl">
-            <TabsTrigger value="live" className="flex items-center gap-2">
+          <TabsList className="w-full max-w-3xl mx-auto overflow-x-auto no-scrollbar bg-gradient-to-r from-slate-900/80 to-purple-900/80 backdrop-blur-xl border border-purple-500/30 shadow-2xl justify-between sm:justify-center gap-1">
+            <TabsTrigger value="live" className="flex items-center gap-2 px-2 py-1 text-xs sm:text-sm">
               <Video className="w-4 h-4" />
               <span className="hidden sm:inline">Live AI</span>
             </TabsTrigger>
-            <TabsTrigger value="camera" className="flex items-center gap-2">
+            <TabsTrigger value="camera" className="flex items-center gap-2 px-2 py-1 text-xs sm:text-sm">
               <Hand className="w-4 h-4" />
               <span className="hidden sm:inline">Capture</span>
             </TabsTrigger>
-            <TabsTrigger value="manual" className="flex items-center gap-2">
+            <TabsTrigger value="face" className="flex items-center gap-2 px-2 py-1 text-xs sm:text-sm" aria-label="Face">
+              <Smile className="w-4 h-4" />
+              <span className="inline">Face</span>
+            </TabsTrigger>
+            <TabsTrigger value="manual" className="flex items-center gap-2 px-2 py-1 text-xs sm:text-sm">
               <MessageSquare className="w-4 h-4" />
               <span className="hidden sm:inline">Manual</span>
             </TabsTrigger>
-            <TabsTrigger value="donate" className="flex items-center gap-2">
+            <TabsTrigger value="donate" className="flex items-center gap-2 px-2 py-1 text-xs sm:text-sm">
               <Heart className="w-4 h-4" />
               <span className="hidden sm:inline">Donate</span>
             </TabsTrigger>
@@ -270,6 +275,23 @@ export default function Page() {
                 </p>
               </div>
               <GestureCameraLive active={activeTab === 'live'} onGestureDetected={handleGestureDetected} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="face" className="space-y-6">
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 border border-blue-500/30 rounded-lg p-4 backdrop-blur-xl shadow-xl shadow-blue-500/20">
+                <h3 className="font-semibold text-blue-200 mb-2 flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg">
+                    <Smile className="w-5 h-5 text-white" />
+                  </div>
+                  Face Expressions (beta)
+                </h3>
+                <p className="text-sm text-blue-300">
+                  On-device face blendshapes to trigger quick phrases like “please”, “thank you”, and “repeat”. No video leaves your device.
+                </p>
+              </div>
+              <FaceExpressionsLive active={activeTab === 'face'} onEvent={handlePhraseSelect} />
             </div>
           </TabsContent>
 
