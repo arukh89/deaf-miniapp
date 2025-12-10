@@ -29,6 +29,9 @@ export default function Page() {
   const [capturedImage, setCapturedImage] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'live'|'camera'|'manual'|'donate'>('live')
   const [outputVersion, setOutputVersion] = useState<number>(0)
+  useEffect(() => {
+    console.log('[UI] translatedText changed =>', translatedText, 'ver=', outputVersion, 'tab=', activeTab)
+  }, [translatedText, outputVersion, activeTab])
     const { addMiniApp } = useAddMiniApp();
     const isInFarcaster = useIsInFarcaster()
     useQuickAuth(isInFarcaster)

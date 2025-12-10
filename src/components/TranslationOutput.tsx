@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Volume2, VolumeX, Copy, Check } from 'lucide-react'
@@ -19,6 +19,10 @@ export function TranslationOutput({ text, language }: TranslationOutputProps) {
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false)
   const [copied, setCopied] = useState<boolean>(false)
   const [speechError, setSpeechError] = useState<string>('')
+  useEffect(() => {
+    // Debug: verify prop updates reach UI
+    console.log('[UI] TranslationOutput text updated =>', text)
+  }, [text])
   const ttsAvailable = useMemo(() => {
     if (typeof window === 'undefined') return false
     return 'speechSynthesis' in window
