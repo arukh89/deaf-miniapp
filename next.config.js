@@ -1,13 +1,15 @@
 /** @type {import('next').NextConfig} */
 const isWin = process.platform === 'win32'
 const isVercel = process.env.VERCEL === '1'
-const devDistConfig = !isVercel && process.env.NODE_ENV === 'development'
+const distFromEnv = !isVercel && process.env.NEXT_DIST_DIR ? process.env.NEXT_DIST_DIR : undefined
+const devDistConfig = !isVercel && !distFromEnv && process.env.NODE_ENV === 'development'
 const nextConfig = {
   // Avoid symlink errors on Windows local builds
   output: isWin ? undefined : 'standalone',
   // Only customize distDir for local development to dodge Windows EPERM issues.
   // On Vercel/production we must use the default '.next'.
-  ...(devDistConfig ? { distDir: process.env.NEXT_DIST_DIR || '.next-local' } : {}),
+  ...(distFromEnv ? { distDir: distFromEnv } : {}),
+  ...(devDistConfig ? { distDir: '.next-local' } : {}),
   images: {
     remotePatterns: [
       {
