@@ -159,7 +159,7 @@ export function DonationSection({ userFid }: DonationSectionProps) {
         const err = e as any
         // viem throws InsufficientFundsError or our pre-check throws "insufficient_balance"
         if (err?.message === 'insufficient_balance' || err instanceof InsufficientFundsError) {
-          setError('Insufficient balance in your wallet.')
+          setError('Your balance is insufficient, please top up.')
           return
         }
         // else ignore and try Base App path next
@@ -185,7 +185,12 @@ export function DonationSection({ userFid }: DonationSectionProps) {
           return
         }
       } catch (e) {
-        // ignore and continue to deep link fallback
+        const err = e as any
+        if (err?.message === 'insufficient_balance' || err instanceof InsufficientFundsError) {
+          setError('Your balance is insufficient, please top up.')
+          return
+        }
+        // ignore other errors and continue to deep link fallback
       }
 
       // 3) Fallbacks: open Warpcast deep link (web/desktop)
