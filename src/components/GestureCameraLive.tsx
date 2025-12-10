@@ -59,8 +59,11 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         setIsLoading(true)
         // Load MediaPipe from CDN to avoid ESM interop issues
         await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js')
+        console.log('[MP] hands.js loaded')
         await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js')
+        console.log('[MP] drawing_utils.js loaded')
         await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js')
+        console.log('[MP] camera_utils.js loaded')
 
         const HandsCtor = (window as any).Hands
         const HAND_CONNECTIONS = (window as any).HAND_CONNECTIONS
@@ -72,6 +75,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
             return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`
           }
         })
+        console.log('[MP] Hands instance created')
 
         // IMPROVED SETTINGS for better sensitivity
         handsInstance.setOptions({
@@ -84,6 +88,11 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         })
 
         handsInstance.onResults((results: Results) => {
+          // Debug counts
+          const count = results.multiHandLandmarks?.length || 0
+          if (count > 0) {
+            console.log('[MP] onResults: hands=', count)
+          }
           const gestureResult = analyzeHandGesture(results)
           
           // CLEAR THRESHOLD: Trigger on confident gestures (>= 0.70)
@@ -221,6 +230,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
           : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       })
+      console.log('[MP] getUserMedia success')
 
       if (videoRef.current) {
         // Ensure iOS inline playback
@@ -238,7 +248,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         setIsStreaming(true)
 
         // Explicitly start playback to satisfy some WebViews
-        try { await videoRef.current.play() } catch {}
+        try { await videoRef.current.play(); console.log('[MP] video.play() resolved') } catch (e) { console.warn('[MP] video.play() rejected', e) }
 
         // Start MediaPipe processing loop
         if (handsRef.current && videoRef.current) {
@@ -253,7 +263,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
                 try {
                   await handsRef.current.send({ image: videoRef.current! })
                 } catch (e) {
-                  console.debug('hands.send error', e)
+                  console.debug('[MP] hands.send error', e)
                 } finally {
                   sendingRef.current = false
                 }
@@ -263,6 +273,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
             })
             cameraRef.current = camera
             camera.start()
+            console.log('[MP] Camera started (camera_utils)')
           } else {
             // Fallback RAF loop if camera_utils not available
             const loop = async () => {
@@ -274,7 +285,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
                 try {
                   await handsRef.current.send({ image: videoRef.current })
                 } catch (e) {
-                  console.debug('hands.send error', e)
+                  console.debug('[MP] hands.send error (RAF)', e)
                 } finally {
                   sendingRef.current = false
                 }
@@ -282,6 +293,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
               requestAnimationFrame(loop)
             }
             requestAnimationFrame(loop)
+            console.log('[MP] Camera started (RAF)')
           }
         }
       }
