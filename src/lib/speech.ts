@@ -16,6 +16,8 @@ export class SpeechService {
   private synth: SpeechSynthesis | null = null
   private voices: SpeechSynthesisVoice[] = []
   private resumeInterval: number | null = null
+  private speakSeq = 0
+  private currentUtterance: SpeechSynthesisUtterance | null = null
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -98,8 +100,10 @@ export class SpeechService {
     return new Promise((resolve, reject) => {
       if (!this.synth) return reject(new Error('speech_not_supported'))
 
-      // Cancel any ongoing speech
-      this.synth.cancel()
+      // Bump token and cancel any ongoing speech
+      const token = ++this.speakSeq
+      try { this.synth.cancel() } catch {}
+      if (this.resumeInterval) { try { clearInterval(this.resumeInterval) } catch {}; this.resumeInterval = null }
 
       const attemptSpeak = async (triedFallback: boolean) => {
         // Ensure voices are loaded BEFORE speaking (important on iOS/WebViews)
@@ -119,27 +123,24 @@ export class SpeechService {
 
         // iOS / some WebViews may pause the queue until user gesture; force resume periodically
         try { this.synth?.resume() } catch {}
-        if (this.resumeInterval) {
-          try { clearInterval(this.resumeInterval) } catch {}
-        }
-        this.resumeInterval = window.setInterval(() => {
-          try { this.synth?.resume() } catch {}
-        }, 200)
+        this.resumeInterval = window.setInterval(() => { try { this.synth?.resume() } catch {} }, 200)
 
+        let started = false
+        this.currentUtterance = utterance
+
+        utterance.onstart = () => { started = true }
         utterance.onend = () => {
-          if (this.resumeInterval) {
-            clearInterval(this.resumeInterval)
-            this.resumeInterval = null
-          }
+          if (token !== this.speakSeq) return // superseded
+          if (this.resumeInterval) { clearInterval(this.resumeInterval); this.resumeInterval = null }
+          this.currentUtterance = null
           resolve()
         }
         utterance.onerror = () => {
-          if (this.resumeInterval) {
-            clearInterval(this.resumeInterval)
-            this.resumeInterval = null
-          }
-          // One retry with safest defaults (no custom voice, en-US)
-          if (!triedFallback) {
+          if (token !== this.speakSeq) return // superseded
+          if (this.resumeInterval) { clearInterval(this.resumeInterval); this.resumeInterval = null }
+          this.currentUtterance = null
+          // Retry ONLY if it never actually started (pre-flight failure)
+          if (!triedFallback && !started) {
             try { this.synth?.cancel() } catch {}
             void attemptSpeak(true)
             return
@@ -155,9 +156,11 @@ export class SpeechService {
   }
 
   stop(): void {
-    if (this.synth) {
-      this.synth.cancel()
-    }
+    if (!this.synth) return
+    this.speakSeq++
+    try { this.synth.cancel() } catch {}
+    if (this.resumeInterval) { try { clearInterval(this.resumeInterval) } catch {}; this.resumeInterval = null }
+    this.currentUtterance = null
   }
 
   isSpeaking(): boolean {

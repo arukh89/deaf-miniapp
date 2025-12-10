@@ -256,7 +256,7 @@ export default function Page() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="live" className="space-y-6">
+          <TabsContent value="live" forceMount className="space-y-6">
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-emerald-900/50 to-cyan-900/50 border border-emerald-500/30 rounded-lg p-4 backdrop-blur-xl shadow-xl shadow-emerald-500/20">
                 <h3 className="font-semibold text-emerald-200 mb-2 flex items-center gap-2">

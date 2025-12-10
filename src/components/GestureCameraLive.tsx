@@ -79,16 +79,16 @@ export function GestureCameraLive({ onGestureDetected, active = false }: Gesture
         const drawConnectors = (window as any).drawConnectors
         const drawLandmarks = (window as any).drawLandmarks
         
-        // Reuse global Hands instance across HMR when possible
-        const handsInstance = g.__mpCache.hands || new HandsCtor({
+        // Always create a fresh Hands instance on mount to avoid stale callbacks/state
+        // Close any previous global instance if present (from HMR)
+        if (g.__mpCache.hands && typeof g.__mpCache.hands.close === 'function') {
+          try { g.__mpCache.hands.close() } catch {}
+          g.__mpCache.hands = null
+        }
+        const handsInstance = new HandsCtor({
           locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`
         })
-        if (!g.__mpCache.hands) {
-          console.log('[MP] Hands instance created')
-          g.__mpCache.hands = handsInstance
-        } else {
-          console.log('[MP] Hands instance reused')
-        }
+        console.log('[MP] Hands instance created (fresh)')
 
         // IMPROVED SETTINGS for better sensitivity
         handsInstance.setOptions({
