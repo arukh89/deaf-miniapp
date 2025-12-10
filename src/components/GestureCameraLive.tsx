@@ -418,6 +418,7 @@ export function GestureCameraLive({ onGestureDetected, active = false }: Gesture
   // Ensure full teardown ONLY on unmount to avoid stopping live detection after start
   useEffect(() => {
     disposedRef.current = false
+    const videoEl = videoRef.current
     return () => {
       disposedRef.current = true
       // stop camera loop first
@@ -426,7 +427,7 @@ export function GestureCameraLive({ onGestureDetected, active = false }: Gesture
         cameraRef.current = null
       }
       // stop media tracks (read from video element to avoid stale state)
-      const media = (videoRef.current?.srcObject as MediaStream | null) || null
+      const media = (videoEl?.srcObject as MediaStream | null) || null
       if (media) {
         try { media.getTracks().forEach((t) => t.stop()) } catch {}
       }
