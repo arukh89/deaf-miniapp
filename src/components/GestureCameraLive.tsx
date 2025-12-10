@@ -14,6 +14,7 @@ import { speechService } from '@/lib/speech'
 
 interface GestureCameraLiveProps {
   onGestureDetected: (phraseKey: string, confidence: number) => void
+  active?: boolean // when true, auto start; when false, auto stop
 }
 
 function loadScript(src: string): Promise<void> {
@@ -30,7 +31,12 @@ function loadScript(src: string): Promise<void> {
   })
 }
 
-export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps) {
+export function GestureCameraLive({ onGestureDetected, active = false }: GestureCameraLiveProps) {
+  // Global cache to survive Fast Refresh / StrictMode double-invoke
+  const g: any = (typeof window !== 'undefined' ? (window as any) : {})
+  if (g) {
+    g.__mpCache = g.__mpCache || { scriptsLoaded: false, hands: null, camera: null }
+  }
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const processCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -45,7 +51,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
   const [lastTriggerTime, setLastTriggerTime] = useState<number>(0)
   const detectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const cooldownUntilRef = useRef<number>(0)
-  const [isMirrored, setIsMirrored] = useState<boolean>(true)
+  const [isMirrored, setIsMirrored] = useState<boolean>(false)
   // Stability refs
   const cameraRef = useRef<any>(null)
   const handsRef = useRef<any>(null)
@@ -57,21 +63,32 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
     const loadMediaPipe = async (): Promise<void> => {
       try {
         setIsLoading(true)
-        // Load MediaPipe from CDN to avoid ESM interop issues
-        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js')
-        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js')
-        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js')
+        // Load scripts once
+        if (!g.__mpCache.scriptsLoaded) {
+          await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js')
+          console.log('[MP] hands.js loaded')
+          await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js')
+          console.log('[MP] drawing_utils.js loaded')
+          await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js')
+          console.log('[MP] camera_utils.js loaded')
+          g.__mpCache.scriptsLoaded = true
+        }
 
         const HandsCtor = (window as any).Hands
         const HAND_CONNECTIONS = (window as any).HAND_CONNECTIONS
         const drawConnectors = (window as any).drawConnectors
         const drawLandmarks = (window as any).drawLandmarks
         
+        // Always create a fresh Hands instance on mount to avoid stale callbacks/state
+        // Close any previous global instance if present (from HMR)
+        if (g.__mpCache.hands && typeof g.__mpCache.hands.close === 'function') {
+          try { g.__mpCache.hands.close() } catch {}
+          g.__mpCache.hands = null
+        }
         const handsInstance = new HandsCtor({
-          locateFile: (file: string) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`
-          }
+          locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`
         })
+        console.log('[MP] Hands instance created (fresh)')
 
         // IMPROVED SETTINGS for better sensitivity
         handsInstance.setOptions({
@@ -79,11 +96,16 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
           modelComplexity: 1,
           minDetectionConfidence: 0.3,  // LOWERED from 0.5 for better sensitivity
           minTrackingConfidence: 0.3,   // LOWERED from 0.5 for better sensitivity
-          // Let MediaPipe handle horizontal mirroring for front camera
-          selfieMode: true
+          // Use non-selfie; we mirror explicitly in processing canvas
+          selfieMode: false
         })
 
         handsInstance.onResults((results: Results) => {
+          // Debug counts
+          const count = results.multiHandLandmarks?.length || 0
+          if (count > 0) {
+            console.log('[MP] onResults: hands=', count)
+          }
           const gestureResult = analyzeHandGesture(results)
           
           // CLEAR THRESHOLD: Trigger on confident gestures (>= 0.70)
@@ -184,11 +206,18 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         clearTimeout(detectionTimeoutRef.current)
       }
     }
+  // onGestureDetected is stable from props in this app; g.__mpCache is global
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onGestureDetected])
 
   const startCamera = async (): Promise<void> => {
     try {
       setError('')
+      // Stop any previous camera
+      if (cameraRef.current && typeof cameraRef.current.stop === 'function') {
+        try { await cameraRef.current.stop() } catch {}
+        cameraRef.current = null
+      }
       
       // In Farcaster Mini App, request permissions via host first
       if (isMiniApp) {
@@ -210,17 +239,12 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         return
       }
 
-      // Use lower resolution on mobile WebViews for stability
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      const isAndroid = /Android/.test(navigator.userAgent)
-      const useMobileRes = isIOS || isAndroid
-
+      // Request higher resolution for more accurate detection (align with fa752879)
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: useMobileRes
-          ? { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-          : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       })
+      console.log('[MP] getUserMedia success')
 
       if (videoRef.current) {
         // Ensure iOS inline playback
@@ -238,52 +262,107 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         setIsStreaming(true)
 
         // Explicitly start playback to satisfy some WebViews
-        try { await videoRef.current.play() } catch {}
+        try { await videoRef.current.play(); console.log('[MP] video.play() resolved') } catch (e) { console.warn('[MP] video.play() rejected', e) }
 
-        // Start MediaPipe processing loop
-        if (handsRef.current && videoRef.current) {
-          const CameraCtor = (window as any).Camera
-          if (CameraCtor) {
-            const camera = new CameraCtor(videoRef.current, {
-              onFrame: async () => {
-                if (disposedRef.current || !handsRef.current) return
-                if (videoRef.current?.videoWidth === 0 || videoRef.current?.videoHeight === 0) return
-                if (sendingRef.current) return
-                sendingRef.current = true
-                try {
-                  await handsRef.current.send({ image: videoRef.current! })
-                } catch (e) {
-                  console.debug('hands.send error', e)
-                } finally {
-                  sendingRef.current = false
+        // Start MediaPipe processing loop (robust wait for Hands & metadata)
+        const startProcessing = () => {
+          const tryStart = (attempt = 0) => {
+            const video = videoRef.current
+            if (!video) return console.warn('[MP] No video element')
+            const haveMeta = video.videoWidth > 0 && video.videoHeight > 0
+            const haveHands = !!handsRef.current
+            if (!haveMeta) {
+              if (attempt % 20 === 0) console.log('[MP] Waiting for metadata...', { haveMeta, attempt })
+              return setTimeout(() => tryStart(attempt + 1), 50)
+            }
+            if (!haveHands && attempt % 20 === 0) {
+              console.log('[MP] Proceeding without Hands ready yet (will send when ready).', { haveHands })
+            }
+
+            const CameraCtor = (window as any).Camera
+            if (CameraCtor) {
+            const camera = new CameraCtor(video, {
+                onFrame: async () => {
+                  const v = videoRef.current
+                  const work = processCanvasRef.current
+                  if (disposedRef.current) return
+                  if (!v || !work || !handsRef.current) return
+                  if (v.videoWidth === 0 || v.videoHeight === 0) return
+
+                  if (work.width !== v.videoWidth || work.height !== v.videoHeight) {
+                    work.width = v.videoWidth
+                    work.height = v.videoHeight
+                  }
+
+                  const ctx = work.getContext('2d')
+                  if (!ctx) return
+                  if (isMirrored) {
+                    ctx.save()
+                    ctx.scale(-1, 1)
+                    ctx.drawImage(v, -work.width, 0, work.width, work.height)
+                    ctx.restore()
+                  } else {
+                    ctx.drawImage(v, 0, 0, work.width, work.height)
+                  }
+                  if (sendingRef.current) return
+                  sendingRef.current = true
+                  try {
+                    await handsRef.current.send({ image: work })
+                  } catch (e) {
+                    console.debug('[MP] hands.send error', e)
+                  } finally {
+                    sendingRef.current = false
+                  }
+                },
+                width: 1280,
+                height: 720
+              })
+              cameraRef.current = camera
+              g.__mpCache.camera = camera
+              camera.start()
+              console.log('[MP] Camera started (camera_utils)')
+            } else {
+              // Fallback RAF loop if camera_utils not available
+              const loop = async () => {
+                if (disposedRef.current) return
+                const v = videoRef.current
+                const work = processCanvasRef.current
+                if (!v || !work) return requestAnimationFrame(loop)
+                if (v.videoWidth === 0 || v.videoHeight === 0) return requestAnimationFrame(loop)
+
+                if (work.width !== v.videoWidth || work.height !== v.videoHeight) {
+                  work.width = v.videoWidth
+                  work.height = v.videoHeight
                 }
-              },
-              width: useMobileRes ? 640 : 1280,
-              height: useMobileRes ? 480 : 720
-            })
-            cameraRef.current = camera
-            camera.start()
-          } else {
-            // Fallback RAF loop if camera_utils not available
-            const loop = async () => {
-              if (disposedRef.current || !handsRef.current) return
-              if (!videoRef.current) return
-              if (videoRef.current.videoWidth === 0 || videoRef.current.videoHeight === 0) return requestAnimationFrame(loop)
-              if (!sendingRef.current) {
-                sendingRef.current = true
-                try {
-                  await handsRef.current.send({ image: videoRef.current })
-                } catch (e) {
-                  console.debug('hands.send error', e)
-                } finally {
-                  sendingRef.current = false
+                const ctx = work.getContext('2d')
+                if (!ctx) return requestAnimationFrame(loop)
+                if (isMirrored) {
+                  ctx.save()
+                  ctx.scale(-1, 1)
+                  ctx.drawImage(v, -work.width, 0, work.width, work.height)
+                  ctx.restore()
+                } else {
+                  ctx.drawImage(v, 0, 0, work.width, work.height)
                 }
+                if (handsRef.current && !sendingRef.current) {
+                  sendingRef.current = true
+                  try {
+                    await handsRef.current.send({ image: work })
+                  } catch (e) {
+                    console.debug('[MP] hands.send error (RAF)', e)
+                  } finally {
+                    sendingRef.current = false
+                  }
+                }
+                requestAnimationFrame(loop)
               }
               requestAnimationFrame(loop)
+              console.log('[MP] Camera started (RAF)')
             }
-            requestAnimationFrame(loop)
           }
+          tryStart()
         }
+        startProcessing()
       }
     } catch (err) {
       console.error('Camera error:', err)
@@ -322,7 +401,21 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
     }
   }
 
-  // Ensure full teardown on unmount to avoid BindingError
+  // Auto start/stop based on active flag (tab switch)
+  useEffect(() => {
+    if (active) {
+      if (!isStreaming) {
+        void startCamera()
+      }
+    } else {
+      if (isStreaming) {
+        void stopCamera()
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active])
+
+  // Ensure full teardown ONLY on unmount to avoid stopping live detection after start
   useEffect(() => {
     disposedRef.current = false
     return () => {
@@ -332,9 +425,10 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         try { cameraRef.current.stop() } catch {}
         cameraRef.current = null
       }
-      // stop media tracks
-      if (stream) {
-        try { stream.getTracks().forEach((t) => t.stop()) } catch {}
+      // stop media tracks (read from video element to avoid stale state)
+      const media = (videoRef.current?.srcObject as MediaStream | null) || null
+      if (media) {
+        try { media.getTracks().forEach((t) => t.stop()) } catch {}
       }
       // close hands last
       if (handsRef.current && typeof handsRef.current.close === 'function') {
@@ -342,7 +436,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         handsRef.current = null
       }
     }
-  }, [stream])
+  }, [])
 
   return (
     <Card className="w-full bg-gradient-to-br from-slate-900/60 to-emerald-900/60 backdrop-blur-xl border-emerald-500/30 shadow-2xl shadow-emerald-500/20">

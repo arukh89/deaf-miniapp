@@ -3,6 +3,9 @@ const isWin = process.platform === 'win32'
 const nextConfig = {
   // Avoid symlink errors on Windows local builds
   output: isWin ? undefined : 'standalone',
+  // Use a custom dist directory to avoid Windows file lock issues on .next.
+  // Allow override via env so dev can rotate when a previous process locks the trace file.
+  distDir: process.env.NEXT_DIST_DIR || '.next-local',
   images: {
     remotePatterns: [
       {

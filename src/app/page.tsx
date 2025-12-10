@@ -27,6 +27,11 @@ export default function Page() {
   const [translatedText, setTranslatedText] = useState<string>('')
   const [lastPhraseKey, setLastPhraseKey] = useState<string | null>(null)
   const [capturedImage, setCapturedImage] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<'live'|'camera'|'manual'|'donate'>('live')
+  const [outputVersion, setOutputVersion] = useState<number>(0)
+  useEffect(() => {
+    console.log('[UI] translatedText changed =>', translatedText, 'ver=', outputVersion, 'tab=', activeTab)
+  }, [translatedText, outputVersion, activeTab])
     const { addMiniApp } = useAddMiniApp();
     const isInFarcaster = useIsInFarcaster()
     useQuickAuth(isInFarcaster)
@@ -67,6 +72,7 @@ export default function Page() {
       const translated = translations[selectedLanguage] || translations.en
       setTranslatedText(translated)
       setLastPhraseKey(phraseKey)
+      setOutputVersion((v) => v + 1)
     }
   }
 
@@ -84,6 +90,7 @@ export default function Page() {
           GESTURE_PHRASES[key as keyof typeof GESTURE_PHRASES].en
         setTranslatedText(translated)
         setLastPhraseKey(key)
+        setOutputVersion((v) => v + 1)
         return
       }
     }
@@ -91,6 +98,7 @@ export default function Page() {
     // If no match, show the input text (would be translated in Pro version)
     setTranslatedText(text)
     setLastPhraseKey(null)
+    setOutputVersion((v) => v + 1)
   }
 
   const handleImageCapture = (imageUrl: string, gesture?: string, confidence?: number): void => {
@@ -107,16 +115,19 @@ export default function Page() {
         console.log('✅ Translation found:', translated)
         setTranslatedText(translated)
         setLastPhraseKey(gesture)
+        setOutputVersion((v) => v + 1)
       } else {
         console.log('❌ No translation found for:', gesture)
         setTranslatedText('Gesture not in translation database. Please select manually.')
         setLastPhraseKey(null)
+        setOutputVersion((v) => v + 1)
       }
     } else {
       // No gesture detected, prompt user to select manually
       console.log('❌ No clear gesture detected')
       setTranslatedText('Gesture not detected clearly. Please select from the phrases below or retake photo.')
       setLastPhraseKey(null)
+      setOutputVersion((v) => v + 1)
     }
   }
 
@@ -127,6 +138,7 @@ export default function Page() {
       const letter = phraseKey.split('_')[1]?.toUpperCase() || ''
       setTranslatedText(letter)
       setLastPhraseKey(null)
+      setOutputVersion((v) => v + 1)
       return
     }
     const translations = GESTURE_PHRASES[phraseKey as keyof typeof GESTURE_PHRASES]
@@ -134,9 +146,11 @@ export default function Page() {
       const translated = translations[selectedLanguage] || translations.en
       setTranslatedText(translated)
       setLastPhraseKey(phraseKey)
+      setOutputVersion((v) => v + 1)
     } else {
       setTranslatedText('Translation not available for this gesture.')
       setLastPhraseKey(null)
+      setOutputVersion((v) => v + 1)
     }
   }
 
@@ -147,6 +161,7 @@ export default function Page() {
     if (!translations) return
     const translated = translations[selectedLanguage] || translations.en
     setTranslatedText(translated)
+    setOutputVersion((v) => v + 1)
   }, [selectedLanguage, lastPhraseKey])
 
   if (isLoading) {
@@ -221,7 +236,7 @@ export default function Page() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="live" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto bg-gradient-to-r from-slate-900/80 to-purple-900/80 backdrop-blur-xl border border-purple-500/30 shadow-2xl">
             <TabsTrigger value="live" className="flex items-center gap-2">
               <Video className="w-4 h-4" />
@@ -241,7 +256,7 @@ export default function Page() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="live" className="space-y-6">
+          <TabsContent value="live" forceMount className="space-y-6">
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-emerald-900/50 to-cyan-900/50 border border-emerald-500/30 rounded-lg p-4 backdrop-blur-xl shadow-xl shadow-emerald-500/20">
                 <h3 className="font-semibold text-emerald-200 mb-2 flex items-center gap-2">
@@ -254,8 +269,7 @@ export default function Page() {
                   Real-time continuous gesture detection using MediaPipe AI. Hold gestures for 0.5s to translate automatically!
                 </p>
               </div>
-              <GestureCameraLive onGestureDetected={handleGestureDetected} />
-              <TranslationOutput text={translatedText} language={selectedLanguage} />
+              <GestureCameraLive active={activeTab === 'live'} onGestureDetected={handleGestureDetected} />
             </div>
           </TabsContent>
 
@@ -279,20 +293,23 @@ export default function Page() {
                 </p>
               </div>
               <GesturePhrases onSelectPhrase={handlePhraseSelect} />
-              <TranslationOutput text={translatedText} language={selectedLanguage} />
             </div>
           </TabsContent>
 
           <TabsContent value="manual" className="space-y-6">
             <ManualInput onSubmit={handleManualInput} />
             <GesturePhrases onSelectPhrase={handlePhraseSelect} />
-            <TranslationOutput text={translatedText} language={selectedLanguage} />
           </TabsContent>
 
           <TabsContent value="donate">
             <DonationSection userFid={user?.fid} />
           </TabsContent>
         </Tabs>
+
+        {/* Unified Translation Output (persists across tabs) */}
+        <div className="mt-6">
+          <TranslationOutput key={`out-${outputVersion}`} text={translatedText} language={selectedLanguage} />
+        </div>
 
         {/* Info Card */}
         <Card className="mt-8 border-cyan-500/30 bg-gradient-to-br from-slate-900/60 to-cyan-900/60 backdrop-blur-xl shadow-2xl shadow-cyan-500/20">
