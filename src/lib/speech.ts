@@ -101,14 +101,16 @@ export class SpeechService {
       // Cancel any ongoing speech
       this.synth.cancel()
 
-      const run = async () => {
+      const attemptSpeak = async (triedFallback: boolean) => {
         // Ensure voices are loaded BEFORE speaking (important on iOS/WebViews)
         await this.waitForVoices(2000)
 
         const utterance = new SpeechSynthesisUtterance(text)
-        utterance.lang = SPEECH_LANG_MAP[language]
+        const langCode = SPEECH_LANG_MAP[language] || 'en-US'
+        utterance.lang = triedFallback ? 'en-US' : langCode
+
         // Pick best voice for target language or fallback to default voice
-        const voice = this.getVoiceForLanguage(language)
+        const voice = triedFallback ? null : this.getVoiceForLanguage(language)
         if (voice) utterance.voice = voice
 
         utterance.rate = 0.9
@@ -136,13 +138,19 @@ export class SpeechService {
             clearInterval(this.resumeInterval)
             this.resumeInterval = null
           }
+          // One retry with safest defaults (no custom voice, en-US)
+          if (!triedFallback) {
+            try { this.synth?.cancel() } catch {}
+            void attemptSpeak(true)
+            return
+          }
           reject(new Error('speech_failed'))
         }
 
         this.synth?.speak(utterance)
       }
 
-      void run()
+      void attemptSpeak(false)
     })
   }
 
