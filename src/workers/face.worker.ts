@@ -43,18 +43,18 @@ function inferEvents(result: FaceLandmarkerResult): string[] {
 
   const get = (k: string) => map.get(k) ?? 0
 
-  // Smile ? thankyou
+  // Smile ? thankyou (more permissive)
   const smile = (get('mouthSmileLeft') + (get('mouthSmileRight'))) / 2
   const mouthOpen = get('jawOpen')
-  if (smile > 0.6 && mouthOpen < 0.3) ev.push('thankyou')
+  if (smile > 0.5 && mouthOpen < 0.4) ev.push('thankyou')
 
   // Brow up ? please
   const browUp = (get('browInnerUp') + get('browOuterUpLeft') + get('browOuterUpRight')) / 3
-  if (browUp > 0.55) ev.push('please')
+  if (browUp > 0.45) ev.push('please')
 
   // Blink (both) ? repeat
   const blink = (get('eyeBlinkLeft') + get('eyeBlinkRight')) / 2
-  if (blink > 0.7) ev.push('repeat')
+  if (blink > 0.6) ev.push('repeat')
 
   return ev
 }

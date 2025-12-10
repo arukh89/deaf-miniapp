@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Camera, Square, Smile, Loader2 } from 'lucide-react'
 import { ErrorMessage } from './ErrorMessage'
+import { useIsInFarcaster } from '@/hooks/useIsInFarcaster'
 
 type WorkerMsg =
   | { type: 'READY' }
@@ -25,6 +26,7 @@ export function FaceExpressionsLive({ active = false, onEvent }: Props) {
   const [error, setError] = useState<string>('')
   const [lastEvent, setLastEvent] = useState<string>('')
   const cooldownUntilRef = useRef<number>(0)
+  const isMiniApp = useIsInFarcaster()
 
   const worker = useMemo(
     () => new Worker(new URL('@/workers/face.worker.ts', import.meta.url), { type: 'module' }),
@@ -62,17 +64,35 @@ export function FaceExpressionsLive({ active = false, onEvent }: Props) {
     try {
       setError('')
       setIsLoading(true)
+      // In Farcaster Mini App, request permissions via host first
+      if (isMiniApp) {
+        try {
+          const { sdk } = await import('@farcaster/miniapp-sdk')
+          if (sdk?.actions?.requestCameraAndMicrophoneAccess) {
+            await sdk.actions.requestCameraAndMicrophoneAccess()
+          }
+        } catch (e) {
+          setError('permission_denied')
+          return
+        }
+      }
       if (!navigator.mediaDevices?.getUserMedia) {
         setError('camera_not_supported')
         return
       }
       const media = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       })
       if (videoRef.current) {
         videoRef.current.srcObject = media
-        try { videoRef.current.setAttribute('playsinline', 'true') } catch {}
+        try {
+          videoRef.current.setAttribute('playsinline', 'true')
+          videoRef.current.setAttribute('webkit-playsinline', 'true')
+          videoRef.current.setAttribute('muted', 'true')
+          ;(videoRef.current as any).playsInline = true
+          videoRef.current.muted = true
+        } catch {}
         try { await videoRef.current.play() } catch {}
       }
       setStream(media)
@@ -122,7 +142,7 @@ export function FaceExpressionsLive({ active = false, onEvent }: Props) {
     <Card className="w-full bg-gradient-to-br from-slate-900/60 to-blue-900/60 backdrop-blur-xl border-blue-500/30 shadow-2xl shadow-blue-500/20">
       <CardContent className="p-3 sm:p-4 md:p-6">
         <div className="space-y-4">
-          <div className="relative h-[60vh] bg-gradient-to-br from-slate-950 to-blue-950 rounded-lg overflow-hidden border-2 border-blue-500/30 shadow-2xl shadow-blue-500/20">
+          <div className="relative h-[70vh] bg-gradient-to-br from-slate-950 to-blue-950 rounded-lg overflow-hidden border-2 border-blue-500/30 shadow-2xl shadow-blue-500/20">
             <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
 
             {!running && !isLoading && (
