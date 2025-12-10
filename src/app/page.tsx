@@ -267,7 +267,6 @@ export default function Page() {
                 </p>
               </div>
               <GestureCameraLive active={activeTab === 'live'} onGestureDetected={handleGestureDetected} />
-              <TranslationOutput key={`out-${outputVersion}-live`} text={translatedText} language={selectedLanguage} />
             </div>
           </TabsContent>
 
@@ -291,20 +290,23 @@ export default function Page() {
                 </p>
               </div>
               <GesturePhrases onSelectPhrase={handlePhraseSelect} />
-              <TranslationOutput key={`out-${outputVersion}-camera`} text={translatedText} language={selectedLanguage} />
             </div>
           </TabsContent>
 
           <TabsContent value="manual" className="space-y-6">
             <ManualInput onSubmit={handleManualInput} />
             <GesturePhrases onSelectPhrase={handlePhraseSelect} />
-            <TranslationOutput key={`out-${outputVersion}-manual`} text={translatedText} language={selectedLanguage} />
           </TabsContent>
 
           <TabsContent value="donate">
             <DonationSection userFid={user?.fid} />
           </TabsContent>
         </Tabs>
+
+        {/* Unified Translation Output (persists across tabs) */}
+        <div className="mt-6">
+          <TranslationOutput key={`out-${outputVersion}`} text={translatedText} language={selectedLanguage} />
+        </div>
 
         {/* Info Card */}
         <Card className="mt-8 border-cyan-500/30 bg-gradient-to-br from-slate-900/60 to-cyan-900/60 backdrop-blur-xl shadow-2xl shadow-cyan-500/20">
