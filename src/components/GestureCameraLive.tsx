@@ -14,6 +14,7 @@ import { speechService } from '@/lib/speech'
 
 interface GestureCameraLiveProps {
   onGestureDetected: (phraseKey: string, confidence: number) => void
+  active?: boolean // when true, auto start; when false, auto stop
 }
 
 function loadScript(src: string): Promise<void> {
@@ -30,7 +31,7 @@ function loadScript(src: string): Promise<void> {
   })
 }
 
-export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps) {
+export function GestureCameraLive({ onGestureDetected, active = false }: GestureCameraLiveProps) {
   // Global cache to survive Fast Refresh / StrictMode double-invoke
   const g: any = (typeof window !== 'undefined' ? (window as any) : {})
   if (g) {
@@ -399,6 +400,20 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
       cooldownUntilRef.current = 0
     }
   }
+
+  // Auto start/stop based on active flag (tab switch)
+  useEffect(() => {
+    if (active) {
+      if (!isStreaming) {
+        void startCamera()
+      }
+    } else {
+      if (isStreaming) {
+        void stopCamera()
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active])
 
   // Ensure full teardown ONLY on unmount to avoid stopping live detection after start
   useEffect(() => {

@@ -27,6 +27,7 @@ export default function Page() {
   const [translatedText, setTranslatedText] = useState<string>('')
   const [lastPhraseKey, setLastPhraseKey] = useState<string | null>(null)
   const [capturedImage, setCapturedImage] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<'live'|'camera'|'manual'|'donate'>('live')
     const { addMiniApp } = useAddMiniApp();
     const isInFarcaster = useIsInFarcaster()
     useQuickAuth(isInFarcaster)
@@ -221,7 +222,7 @@ export default function Page() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="live" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto bg-gradient-to-r from-slate-900/80 to-purple-900/80 backdrop-blur-xl border border-purple-500/30 shadow-2xl">
             <TabsTrigger value="live" className="flex items-center gap-2">
               <Video className="w-4 h-4" />
@@ -254,7 +255,7 @@ export default function Page() {
                   Real-time continuous gesture detection using MediaPipe AI. Hold gestures for 0.5s to translate automatically!
                 </p>
               </div>
-              <GestureCameraLive onGestureDetected={handleGestureDetected} />
+              <GestureCameraLive active={activeTab === 'live'} onGestureDetected={handleGestureDetected} />
               <TranslationOutput text={translatedText} language={selectedLanguage} />
             </div>
           </TabsContent>
