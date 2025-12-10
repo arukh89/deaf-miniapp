@@ -400,7 +400,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
     }
   }
 
-  // Ensure full teardown on unmount to avoid BindingError
+  // Ensure full teardown ONLY on unmount to avoid stopping live detection after start
   useEffect(() => {
     disposedRef.current = false
     return () => {
@@ -410,9 +410,10 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         try { cameraRef.current.stop() } catch {}
         cameraRef.current = null
       }
-      // stop media tracks
-      if (stream) {
-        try { stream.getTracks().forEach((t) => t.stop()) } catch {}
+      // stop media tracks (read from video element to avoid stale state)
+      const media = (videoRef.current?.srcObject as MediaStream | null) || null
+      if (media) {
+        try { media.getTracks().forEach((t) => t.stop()) } catch {}
       }
       // close hands last
       if (handsRef.current && typeof handsRef.current.close === 'function') {
@@ -420,7 +421,7 @@ export function GestureCameraLive({ onGestureDetected }: GestureCameraLiveProps)
         handsRef.current = null
       }
     }
-  }, [stream])
+  }, [])
 
   return (
     <Card className="w-full bg-gradient-to-br from-slate-900/60 to-emerald-900/60 backdrop-blur-xl border-emerald-500/30 shadow-2xl shadow-emerald-500/20">
