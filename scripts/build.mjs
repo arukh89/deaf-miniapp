@@ -35,8 +35,8 @@ if (isVercel) {
   const tracePath = join(process.cwd(), dist, 'trace')
   ensureDir(join(process.cwd(), dist))
   try {
-    // Clean previous trace to avoid EPERM on Windows if possible
-    rmSync(tracePath, { force: true })
+    // Clean previous trace folder to avoid EPERM on Windows (must be recursive)
+    rmSync(tracePath, { force: true, recursive: true })
     spawnNext(dist)
   } catch (err) {
     // If EPERM/EBUSY, rotate dist directory to avoid locked file
